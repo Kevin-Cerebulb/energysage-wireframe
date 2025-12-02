@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EnergySage.ai | Faults and Outliers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="css/styles.css" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["IBM Plex Sans", "system-ui", "sans-serif"],
+              mono: ["IBM Plex Mono", "monospace"],
+            },
+            colors: {
+              accent: {
+                green: "#00dc82",
+                red: "#ff5252",
+                yellow: "#f59e0b",
+                blue: "#3b82f6",
+                purple: "#8b5cf6",
+              },
+            },
+            fontSize: { "2xs": "0.65rem" },
+          },
+        },
+      };
+    </script>
+    <style>
+      .tab-btn {
+        transition: all 0.15s;
+      }
+      .tab-btn.active {
+        border-bottom: 2px solid #00dc82;
+        color: inherit;
+      }
+      .tab-btn:not(.active):hover {
+        color: var(--text-secondary);
+      }
+
+      .compartment-card {
+        transition: all 0.15s;
+      }
+      .compartment-card:hover {
+        border-color: rgba(0, 220, 130, 0.4);
+        transform: translateY(-1px);
+      }
+
+      .progress-bar {
+        background: linear-gradient(
+          90deg,
+          #00dc82 0%,
+          #00dc82 var(--progress),
+          #333 var(--progress)
+        );
+      }
+      .light-mode .progress-bar {
+        background: linear-gradient(
+          90deg,
+          #00dc82 0%,
+          #00dc82 var(--progress),
+          #e5e7eb var(--progress)
+        );
+      }
+
+      .upload-zone {
+        border: 2px dashed var(--border-secondary);
+        transition: all 0.2s;
+      }
+      .upload-zone:hover,
+      .upload-zone.drag-over {
+        border-color: #00dc82;
+        background: rgba(0, 220, 130, 0.05);
+      }
+
+      .comment-item {
+        transition: background 0.1s;
+      }
+      .comment-item:hover {
+        background: var(--bg-hover);
+      }
+
+      .timeline-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 4px;
+        background: #333;
+        border-radius: 2px;
+        outline: none;
+      }
+      .timeline-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        background: #00dc82;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .light-mode .timeline-slider {
+        background: #e5e7eb;
+      }
+
+      .chart-container {
+        position: relative;
+        height: 120px;
+      }
+
+      .live-indicator {
+        background: #f1f5f9;
+      }
+      .dark .live-indicator {
+        background: #1a1a1a;
+      }
+
+      @media (max-width: 1280px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+        .right-panel {
+          order: -1;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .equipment-bar {
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .compartments-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .compartments-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="font-sans text-sm antialiased bg-gray-50 text-gray-900 dark:bg-[#0a0a0a] dark:text-white"
+  >
+    <!-- Header -->
+    <header
+      class="h-10 border-b bg-white dark:bg-[#111] border-gray-200 dark:border-[#222] flex items-center px-3 sticky top-0 z-50"
+    >
+      <div class="flex items-center gap-3 flex-1">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-5 h-5 rounded bg-accent-green flex items-center justify-center"
+          >
+            <svg
+              class="w-3 h-3 text-black"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <span class="font-semibold text-xs">EnergySage</span>
+        </div>
+        <nav class="flex items-center gap-1 ml-4">
+          <button
+            class="px-3 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+          >
+            <a href="./LandingPage.html">KPI</a>
+          </button>
+          <button
+            class="px-3 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+          >
+            <a href="./AssetSummary.html">Assets Summary</a>
+          </button>
+          <button
+            class="px-3 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+          >
+            <a href="./EquipmentDetails.html">Equipment Details</a>
+          </button>
+          <button
+            class="px-3 py-2.5 text-xs font-medium border-b-2 border-accent-green dark:text-white"
+          >
+            <a href="./FaultsOutliers.html">Faults & Outliers</a>
+          </button>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="relative w-40">
+          <svg
+            class="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search..."
+            class="w-full bg-gray-100 dark:bg-[#1a1a1a] border-0 rounded px-2 py-1 pl-6 text-2xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-accent-green"
+          />
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            id="themeToggle"
+            class="sr-only peer"
+            onchange="toggleTheme()"
+          />
+          <div
+            class="toggle-bg w-8 h-[18px] bg-gray-300 dark:bg-[#333] rounded-full relative"
+          >
+            <div
+              class="toggle-dot absolute left-0.5 top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow flex items-center justify-center"
+            >
+              <svg
+                class="w-2 h-2 text-gray-500 sun-icon hidden"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                />
+              </svg>
+              <svg
+                class="w-2 h-2 text-gray-500 moon-icon"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+                />
+              </svg>
+            </div>
+          </div>
+        </label>
+        <div
+          class="live-indicator flex items-center gap-1.5 px-2 py-1 rounded text-2xs"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-green pulse"></span>
+          <span class="text-gray-500">Live</span>
+          <span class="text-gray-500">•</span>
+          <span
+            class="text-gray-600 dark:text-gray-400 font-mono"
+            id="live-time"
+            >10:42:15</span
+          >
+        </div>
+        <button
+          onclick="toggleRecsDrawer()"
+          class="relative p-1.5 rounded hover:bg-gray-100 dark:hover:bg-[#222]"
+        >
+          <svg
+            class="w-4 h-4 text-gray-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          <span
+            class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-accent-red rounded-full text-2xs flex items-center justify-center font-medium text-white"
+            >5</span
+          >
+        </button>
+        <div
+          class="w-6 h-6 rounded-full bg-accent-blue text-2xs font-medium flex items-center justify-center text-white"
+        >
+          JD
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Title Bar -->
+    <div
+      class="h-12 border-b bg-white dark:bg-[#0f0f0f] border-gray-200 dark:border-[#222] flex items-center justify-between px-4 sticky top-10 z-40"
+    >
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <svg
+            class="w-5 h-5 text-accent-yellow"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <h1 class="text-base font-semibold">Exception Details</h1>
+        </div>
+        <div class="flex items-center gap-2 ml-4">
+          <span class="text-xs text-gray-500 dark:text-gray-400"
+            >Currently Viewing:</span
+          >
+          <span
+            class="px-2 py-0.5 bg-accent-yellow/10 text-accent-yellow text-xs font-medium rounded"
+            >High Air Filter Differential Pressure</span
+          >
+          <span
+            class="w-5 h-5 bg-accent-red rounded-full text-2xs font-medium flex items-center justify-center text-white"
+            >3</span
+          >
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-[#333] rounded hover:border-gray-400 dark:hover:border-[#444] transition-colors"
+        >
+          <span class="flex items-center gap-1.5">
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
+            Export
+          </span>
+        </button>
+        <button
+          class="px-3 py-1.5 text-xs font-medium bg-accent-green text-black rounded hover:bg-accent-green/90 transition-colors"
+        >
+          Acknowledge All
+        </button>
+      </div>
+    </div>
+
+    <!-- Equipment Summary Bar -->
+    <div
+      class="equipment-bar border-b bg-white dark:bg-[#111] border-gray-200 dark:border-[#222] px-4 py-2.5 flex items-center gap-6 overflow-x-auto"
+    >
+      <!-- Equipment Code -->
+      <div class="flex items-center gap-2 shrink-0">
+        <div
+          class="w-8 h-8 rounded-lg bg-accent-blue/10 flex items-center justify-center"
+        >
+          <svg
+            class="w-4 h-4 text-accent-blue"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+            />
+          </svg>
+        </div>
+        <div>
+          <div class="text-2xs text-gray-500 dark:text-gray-400">
+            Equipment Code
+          </div>
+          <div class="text-sm font-semibold font-mono">SSP00273</div>
+        </div>
+      </div>
+
+      <div class="w-px h-8 bg-gray-200 dark:bg-[#333] shrink-0"></div>
+
+      <!-- Model -->
+      <div class="shrink-0">
+        <div class="text-2xs text-gray-500 dark:text-gray-400">Model</div>
+        <div class="text-sm font-medium">793F</div>
+      </div>
+
+      <div class="w-px h-8 bg-gray-200 dark:bg-[#333] shrink-0"></div>
+
+      <!-- Equipment ID -->
+      <div class="shrink-0">
+        <div class="text-2xs text-gray-500 dark:text-gray-400">
+          Equipment ID
+        </div>
+        <div class="text-sm font-medium font-mono text-accent-blue">DT054</div>
+      </div>
+
+      <div class="w-px h-8 bg-gray-200 dark:bg-[#333] shrink-0"></div>
+
+      <!-- Fleet Manager -->
+      <div class="flex items-center gap-2 shrink-0">
+        <div
+          class="w-6 h-6 rounded-full bg-accent-purple text-2xs font-medium flex items-center justify-center text-white"
+        >
+          M
+        </div>
+        <div>
+          <div class="text-2xs text-gray-500 dark:text-gray-400">
+            Fleet Manager
+          </div>
+          <div class="text-sm font-medium">Martin</div>
+        </div>
+      </div>
+
+      <div class="w-px h-8 bg-gray-200 dark:bg-[#333] shrink-0"></div>
+
+      <!-- PM Dates -->
+      <div class="flex items-center gap-4 shrink-0">
+        <div>
+          <div class="text-2xs text-gray-500 dark:text-gray-400">
+            Last PM Date
+          </div>
+          <div class="text-xs font-medium">Nov 15, 2024</div>
+        </div>
+        <div>
+          <div class="text-2xs text-gray-500 dark:text-gray-400">
+            Last PM Value
+          </div>
+          <div class="text-xs font-medium font-mono">20,530 hrs</div>
+        </div>
+        <div>
+          <div class="text-2xs text-gray-500 dark:text-gray-400">
+            Next PM Date
+          </div>
+          <div class="text-xs font-medium text-accent-green">Dec 15, 2024</div>
+        </div>
+      </div>
+
+      <div class="flex-1"></div>
+
+      <!-- Count Card -->
+      <div
+        class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg"
+      >
+        <div
+          class="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#1a1a1a] dark:to-[#0a0a0a] rounded-lg flex items-center justify-center"
+        >
+          <div class="text-center">
+            <img
+              src="./dumper.jpg"
+              alt="793F Mining Truck"
+              srcset=""
+              class="h-16 rounded"
+            />
+            <!-- <p class="text-2xs text-gray-400">793F Mining Truck</p> -->
+          </div>
+        </div>
+      </div>
+      <div
+        class="px-4 py-2 bg-accent-red/10 border border-accent-red/20 rounded-lg shrink-0"
+      >
+        <div class="text-2xs text-accent-red">Exception Count</div>
+        <div class="text-xl font-bold text-accent-red">50</div>
+      </div>
+    </div>
+
+    <!-- Main Tabs -->
+    <div
+      class="border-b bg-white dark:bg-[#0f0f0f] border-gray-200 dark:border-[#222] px-4 sticky top-[82px] z-30"
+    >
+      <div class="flex items-center gap-1 -mb-px overflow-x-auto">
+        <button
+          onclick="setMainTab('management')"
+          data-tab="management"
+          class="tab-btn active px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap"
+        >
+          Management
+        </button>
+        <button
+          onclick="setMainTab('compartments')"
+          data-tab="compartments"
+          class="tab-btn px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap"
+        >
+          Compartments
+        </button>
+        <button
+          onclick="setMainTab('oil')"
+          data-tab="oil"
+          class="tab-btn px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap"
+        >
+          Oil Analysis Results
+        </button>
+        <button
+          onclick="setMainTab('manual')"
+          data-tab="manual"
+          class="tab-btn px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap"
+        >
+          Manual Con-Mon Data
+        </button>
+        <button
+          onclick="setMainTab('faults')"
+          data-tab="faults"
+          class="tab-btn px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap"
+        >
+          Faults
+        </button>
+        <button
+          onclick="setMainTab('workorders')"
+          data-tab="workorders"
+          class="tab-btn px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap"
+        >
+          Work Orders
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="p-4">
+      <div class="main-grid grid grid-cols-[1fr_380px] gap-4">
+        <!-- Left Column -->
+        <div class="space-y-4">
+          <!-- Compartment Cards -->
+          <div
+            class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg p-4"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-sm font-semibold">System Compartments</h2>
+              <span class="text-2xs text-gray-500 dark:text-gray-400"
+                >6 systems monitored</span
+              >
+            </div>
+            <div class="compartments-grid grid grid-cols-3 gap-3">
+              <!-- Air Induction & Exhaust -->
+              <div
+                class="compartment-card p-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#222] rounded-lg cursor-pointer"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-accent-blue/10 flex items-center justify-center"
+                  >
+                    <svg
+                      class="w-4 h-4 text-accent-blue"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-medium truncate">
+                      Air Induction & Exhaust
+                    </div>
+                    <div class="text-2xs text-gray-500 dark:text-gray-400">
+                      20,530 / 24,000 Hrs
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="relative h-1.5 bg-gray-200 dark:bg-[#222] rounded-full overflow-hidden"
+                >
+                  <div
+                    class="absolute inset-y-0 left-0 bg-accent-blue rounded-full"
+                    style="width: 86%"
+                  ></div>
+                </div>
+                <div
+                  class="text-right text-2xs font-medium text-accent-blue mt-1"
+                >
+                  86%
+                </div>
+              </div>
+
+              <!-- Braking System -->
+              <div
+                class="compartment-card p-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#222] rounded-lg cursor-pointer"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-accent-red/10 flex items-center justify-center"
+                  >
+                    <svg
+                      class="w-4 h-4 text-accent-red"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                      />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-medium truncate">
+                      Braking System
+                    </div>
+                    <div class="text-2xs text-gray-500 dark:text-gray-400">
+                      18,200 / 20,000 Hrs
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="relative h-1.5 bg-gray-200 dark:bg-[#222] rounded-full overflow-hidden"
+                >
+                  <div
+                    class="absolute inset-y-0 left-0 bg-accent-red rounded-full"
+                    style="width: 91%"
+                  ></div>
+                </div>
+                <div
+                  class="text-right text-2xs font-medium text-accent-red mt-1"
+                >
+                  91%
+                </div>
+              </div>
+
+              <!-- Lubrication System -->
+              <div
+                class="compartment-card p-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#222] rounded-lg cursor-pointer"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-accent-yellow/10 flex items-center justify-center"
+                  >
+                    <svg
+                      class="w-4 h-4 text-accent-yellow"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-medium truncate">
+                      Lubrication System
+                    </div>
+                    <div class="text-2xs text-gray-500 dark:text-gray-400">
+                      15,400 / 20,000 Hrs
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="relative h-1.5 bg-gray-200 dark:bg-[#222] rounded-full overflow-hidden"
+                >
+                  <div
+                    class="absolute inset-y-0 left-0 bg-accent-yellow rounded-full"
+                    style="width: 77%"
+                  ></div>
+                </div>
+                <div
+                  class="text-right text-2xs font-medium text-accent-yellow mt-1"
+                >
+                  77%
+                </div>
+              </div>
+
+              <!-- Machine -->
+              <div
+                class="compartment-card p-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#222] rounded-lg cursor-pointer"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-accent-green/10 flex items-center justify-center"
+                  >
+                    <svg
+                      class="w-4 h-4 text-accent-green"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-medium truncate">Machine</div>
+                    <div class="text-2xs text-gray-500 dark:text-gray-400">
+                      20,530 / 30,000 Hrs
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="relative h-1.5 bg-gray-200 dark:bg-[#222] rounded-full overflow-hidden"
+                >
+                  <div
+                    class="absolute inset-y-0 left-0 bg-accent-green rounded-full"
+                    style="width: 68%"
+                  ></div>
+                </div>
+                <div
+                  class="text-right text-2xs font-medium text-accent-green mt-1"
+                >
+                  68%
+                </div>
+              </div>
+
+              <!-- Cooling System -->
+              <div
+                class="compartment-card p-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#222] rounded-lg cursor-pointer"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-accent-blue/10 flex items-center justify-center"
+                  >
+                    <svg
+                      class="w-4 h-4 text-accent-blue"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-medium truncate">
+                      Cooling System
+                    </div>
+                    <div class="text-2xs text-gray-500 dark:text-gray-400">
+                      19,800 / 22,000 Hrs
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="relative h-1.5 bg-gray-200 dark:bg-[#222] rounded-full overflow-hidden"
+                >
+                  <div
+                    class="absolute inset-y-0 left-0 bg-accent-blue rounded-full"
+                    style="width: 90%"
+                  ></div>
+                </div>
+                <div
+                  class="text-right text-2xs font-medium text-accent-blue mt-1"
+                >
+                  90%
+                </div>
+              </div>
+
+              <!-- Transmission & Drive Line -->
+              <div
+                class="compartment-card p-3 bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#222] rounded-lg cursor-pointer"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-accent-purple/10 flex items-center justify-center"
+                  >
+                    <svg
+                      class="w-4 h-4 text-accent-purple"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-xs font-medium truncate">
+                      Transmission & Drive Line
+                    </div>
+                    <div class="text-2xs text-gray-500 dark:text-gray-400">
+                      12,300 / 18,000 Hrs
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="relative h-1.5 bg-gray-200 dark:bg-[#222] rounded-full overflow-hidden"
+                >
+                  <div
+                    class="absolute inset-y-0 left-0 bg-accent-purple rounded-full"
+                    style="width: 68%"
+                  ></div>
+                </div>
+                <div
+                  class="text-right text-2xs font-medium text-accent-purple mt-1"
+                >
+                  68%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comments & File Upload Section -->
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Comments Section -->
+            <div
+              class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg"
+            >
+              <div
+                class="flex items-center justify-between p-3 border-b border-gray-200 dark:border-[#222]"
+              >
+                <h3 class="text-xs font-semibold">Comments</h3>
+                <span class="text-2xs text-gray-500 dark:text-gray-400"
+                  >3 comments</span
+                >
+              </div>
+              <div class="max-h-64 overflow-y-auto">
+                <div
+                  class="comment-item p-3 border-b border-gray-100 dark:border-[#1a1a1a]"
+                >
+                  <div class="flex items-start gap-2">
+                    <div
+                      class="w-6 h-6 rounded-full bg-accent-purple text-2xs font-medium flex items-center justify-center text-white shrink-0"
+                    >
+                      M
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-medium">Martin</span>
+                        <span class="text-2xs text-gray-500 dark:text-gray-400"
+                          >2 hours ago</span
+                        >
+                        <button
+                          class="text-2xs text-accent-blue hover:underline ml-auto"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <p class="text-xs text-gray-600 dark:text-gray-300">
+                        Air filter replacement scheduled for next maintenance
+                        window. Parts have been ordered.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="comment-item p-3 border-b border-gray-100 dark:border-[#1a1a1a]"
+                >
+                  <div class="flex items-start gap-2">
+                    <div
+                      class="w-6 h-6 rounded-full bg-accent-blue text-2xs font-medium flex items-center justify-center text-white shrink-0"
+                    >
+                      JD
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-medium">John Davis</span>
+                        <span class="text-2xs text-gray-500 dark:text-gray-400"
+                          >5 hours ago</span
+                        >
+                        <button
+                          class="text-2xs text-accent-blue hover:underline ml-auto"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <p class="text-xs text-gray-600 dark:text-gray-300">
+                        Inspected the unit. Filter differential pressure reading
+                        confirmed at 18.5 kPa.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="comment-item p-3">
+                  <div class="flex items-start gap-2">
+                    <div
+                      class="w-6 h-6 rounded-full bg-accent-green text-2xs font-medium flex items-center justify-center text-black shrink-0"
+                    >
+                      S
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-medium">Sarah</span>
+                        <span class="text-2xs text-gray-500 dark:text-gray-400"
+                          >1 day ago</span
+                        >
+                        <button
+                          class="text-2xs text-accent-blue hover:underline ml-auto"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <p class="text-xs text-gray-600 dark:text-gray-300">
+                        Initial alert triggered. Assigned to Martin for review.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="p-3 border-t border-gray-200 dark:border-[#222]">
+                <div class="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add a comment..."
+                    class="flex-1 bg-gray-100 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#222] rounded px-3 py-1.5 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-accent-green"
+                  />
+                  <button
+                    class="p-1.5 bg-accent-green text-black rounded hover:bg-accent-green/90"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- File Upload Section -->
+            <div
+              class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg"
+            >
+              <div
+                class="flex items-center justify-between p-3 border-b border-gray-200 dark:border-[#222]"
+              >
+                <h3 class="text-xs font-semibold">Attachments</h3>
+                <span class="text-2xs text-gray-500 dark:text-gray-400"
+                  >2 files</span
+                >
+              </div>
+              <div class="p-3">
+                <div
+                  id="uploadZone"
+                  class="upload-zone rounded-lg p-4 text-center mb-3"
+                >
+                  <svg
+                    class="w-8 h-8 mx-auto text-gray-400 mb-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.5"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    Drag and drop files here
+                  </p>
+                  <label
+                    class="inline-block px-3 py-1.5 bg-accent-green text-black text-xs font-medium rounded cursor-pointer hover:bg-accent-green/90"
+                  >
+                    Browse Files
+                    <input
+                      type="file"
+                      multiple
+                      class="hidden"
+                      onchange="handleFileUpload(event)"
+                    />
+                  </label>
+                </div>
+
+                <!-- Uploaded Files -->
+                <div class="space-y-2">
+                  <div
+                    class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-[#0a0a0a] rounded"
+                  >
+                    <svg
+                      class="w-4 h-4 text-accent-blue shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-2xs font-medium truncate">
+                        inspection_report_nov24.pdf
+                      </div>
+                      <div class="text-2xs text-gray-500 dark:text-gray-400">
+                        2.4 MB
+                      </div>
+                    </div>
+                    <div
+                      class="w-16 h-1 bg-gray-200 dark:bg-[#333] rounded-full overflow-hidden"
+                    >
+                      <div
+                        class="h-full bg-accent-green"
+                        style="width: 100%"
+                      ></div>
+                    </div>
+                    <button class="p-1 text-gray-400 hover:text-accent-red">
+                      <svg
+                        class="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <div
+                    class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-[#0a0a0a] rounded"
+                  >
+                    <svg
+                      class="w-4 h-4 text-accent-green shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                      <div class="text-2xs font-medium truncate">
+                        filter_photo_001.jpg
+                      </div>
+                      <div class="text-2xs text-gray-500 dark:text-gray-400">
+                        1.8 MB
+                      </div>
+                    </div>
+                    <div
+                      class="w-16 h-1 bg-gray-200 dark:bg-[#333] rounded-full overflow-hidden"
+                    >
+                      <div
+                        class="h-full bg-accent-green"
+                        style="width: 100%"
+                      ></div>
+                    </div>
+                    <button class="p-1 text-gray-400 hover:text-accent-red">
+                      <svg
+                        class="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Related Channel Details Table -->
+          <div
+            class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg"
+          >
+            <div
+              class="flex items-center justify-between p-3 border-b border-gray-200 dark:border-[#222]"
+            >
+              <h3 class="text-xs font-semibold">Related Channel Details</h3>
+              <button class="text-2xs text-accent-blue hover:underline">
+                Export CSV
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="bg-gray-50 dark:bg-[#0a0a0a] text-left">
+                    <th
+                      class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                    >
+                      Name
+                    </th>
+                    <th
+                      class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                    >
+                      Value
+                    </th>
+                    <th
+                      class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                    >
+                      Units
+                    </th>
+                    <th
+                      class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                    >
+                      Time
+                    </th>
+                    <th
+                      class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400 text-right"
+                    >
+                      Average
+                    </th>
+                    <th
+                      class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400 text-right"
+                    >
+                      Minimum
+                    </th>
+                    <th
+                      class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400 text-right"
+                    >
+                      Maximum
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-[#1a1a1a]">
+                  <tr class="hover:bg-gray-50 dark:hover:bg-[#0a0a0a]">
+                    <td class="px-3 py-2 font-medium">
+                      Air Filter Differential Pressure
+                    </td>
+                    <td class="px-3 py-2 font-mono text-accent-red">18.5</td>
+                    <td class="px-3 py-2 text-gray-500 dark:text-gray-400">
+                      kPa
+                    </td>
+                    <td
+                      class="px-3 py-2 text-gray-500 dark:text-gray-400 font-mono"
+                    >
+                      14:32:15
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">12.4</td>
+                    <td
+                      class="px-3 py-2 text-right font-mono text-accent-green"
+                    >
+                      8.2
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono text-accent-red">
+                      18.5
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 dark:hover:bg-[#0a0a0a]">
+                    <td class="px-3 py-2 font-medium">Atmospheric Pressure</td>
+                    <td class="px-3 py-2 font-mono">98.2</td>
+                    <td class="px-3 py-2 text-gray-500 dark:text-gray-400">
+                      kPa
+                    </td>
+                    <td
+                      class="px-3 py-2 text-gray-500 dark:text-gray-400 font-mono"
+                    >
+                      14:32:15
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">98.1</td>
+                    <td class="px-3 py-2 text-right font-mono">97.8</td>
+                    <td class="px-3 py-2 text-right font-mono">98.4</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 dark:hover:bg-[#0a0a0a]">
+                    <td class="px-3 py-2 font-medium">Turbo Inlet Pressure</td>
+                    <td class="px-3 py-2 font-mono">142.5</td>
+                    <td class="px-3 py-2 text-gray-500 dark:text-gray-400">
+                      kPa
+                    </td>
+                    <td
+                      class="px-3 py-2 text-gray-500 dark:text-gray-400 font-mono"
+                    >
+                      14:32:15
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">138.2</td>
+                    <td class="px-3 py-2 text-right font-mono">125.4</td>
+                    <td class="px-3 py-2 text-right font-mono">148.7</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 dark:hover:bg-[#0a0a0a]">
+                    <td class="px-3 py-2 font-medium">Engine Speed</td>
+                    <td class="px-3 py-2 font-mono">1850</td>
+                    <td class="px-3 py-2 text-gray-500 dark:text-gray-400">
+                      RPM
+                    </td>
+                    <td
+                      class="px-3 py-2 text-gray-500 dark:text-gray-400 font-mono"
+                    >
+                      14:32:15
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">1720</td>
+                    <td class="px-3 py-2 text-right font-mono">850</td>
+                    <td class="px-3 py-2 text-right font-mono">1950</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 dark:hover:bg-[#0a0a0a]">
+                    <td class="px-3 py-2 font-medium">
+                      Intake Manifold Temperature
+                    </td>
+                    <td class="px-3 py-2 font-mono">52.3</td>
+                    <td class="px-3 py-2 text-gray-500 dark:text-gray-400">
+                      °C
+                    </td>
+                    <td
+                      class="px-3 py-2 text-gray-500 dark:text-gray-400 font-mono"
+                    >
+                      14:32:15
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">48.5</td>
+                    <td class="px-3 py-2 text-right font-mono">32.1</td>
+                    <td class="px-3 py-2 text-right font-mono">58.4</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel - Analytics -->
+        <div class="right-panel space-y-4">
+          <!-- Charts -->
+          <div
+            class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <h3
+                class="text-2xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+              >
+                Trend – Air Filter Differential Pressure (Max)
+              </h3>
+              <span class="text-2xs text-accent-red font-medium">18.5 kPa</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="chartPressure"></canvas>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <h3
+                class="text-2xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+              >
+                DL – Atmospheric Pressure
+              </h3>
+              <span class="text-2xs text-accent-blue font-medium"
+                >98.2 kPa</span
+              >
+            </div>
+            <div class="chart-container">
+              <canvas id="chartAtmospheric"></canvas>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <h3
+                class="text-2xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+              >
+                TR – Turbo Inlet Pressure (Max)
+              </h3>
+              <span class="text-2xs text-accent-green font-medium"
+                >142.5 kPa</span
+              >
+            </div>
+            <div class="chart-container">
+              <canvas id="chartTurbo"></canvas>
+            </div>
+          </div>
+
+          <!-- Vehicle Image -->
+
+          <!-- Related OSI Exception Table -->
+          <div
+            class="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-lg"
+          >
+            <div
+              class="flex items-center justify-between p-3 border-b border-gray-200 dark:border-[#222]"
+            >
+              <h3 class="text-xs font-semibold">Related OSI Exceptions</h3>
+              <span class="text-2xs text-gray-500 dark:text-gray-400"
+                >3 events</span
+              >
+            </div>
+            <div class="divide-y divide-gray-100 dark:divide-[#1a1a1a]">
+              <div class="p-3 flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs font-medium truncate">
+                    High Air Filter DP Warning
+                  </div>
+                  <div
+                    class="flex items-center gap-2 text-2xs text-gray-500 dark:text-gray-400"
+                  >
+                    <span>Start: Nov 28, 14:15</span>
+                    <span>•</span>
+                    <span>End: Active</span>
+                  </div>
+                </div>
+                <button
+                  class="px-2 py-1 text-2xs font-medium bg-accent-yellow/10 text-accent-yellow rounded hover:bg-accent-yellow/20"
+                >
+                  Acknowledge
+                </button>
+              </div>
+              <div class="p-3 flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs font-medium truncate">
+                    Turbo Inlet Pressure Elevated
+                  </div>
+                  <div
+                    class="flex items-center gap-2 text-2xs text-gray-500 dark:text-gray-400"
+                  >
+                    <span>Start: Nov 27, 09:42</span>
+                    <span>•</span>
+                    <span>End: Nov 27, 11:30</span>
+                  </div>
+                </div>
+                <span
+                  class="px-2 py-1 text-2xs font-medium bg-accent-green/10 text-accent-green rounded"
+                >
+                  Acknowledged
+                </span>
+              </div>
+              <div class="p-3 flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs font-medium truncate">
+                    Engine Speed Variance
+                  </div>
+                  <div
+                    class="flex items-center gap-2 text-2xs text-gray-500 dark:text-gray-400"
+                  >
+                    <span>Start: Nov 25, 16:08</span>
+                    <span>•</span>
+                    <span>End: Nov 25, 16:45</span>
+                  </div>
+                </div>
+                <span
+                  class="px-2 py-1 text-2xs font-medium bg-accent-green/10 text-accent-green rounded"
+                >
+                  Acknowledged
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Timeline Bar -->
+
+    <!-- Recommendations Drawer -->
+    <div
+      id="recs-overlay"
+      class="fixed inset-0 bg-black/40 z-40 hidden"
+      onclick="toggleRecsDrawer()"
+    ></div>
+    <div
+      id="recs-drawer"
+      class="fixed right-0 top-0 bottom-0 w-80 bg-white dark:bg-[#111] border-l border-gray-200 dark:border-[#222] z-50 flex flex-col transform translate-x-full transition-transform duration-300"
+    >
+      <div
+        class="h-10 border-b border-gray-200 dark:border-[#222] flex items-center justify-between px-3"
+      >
+        <div class="font-medium text-sm">Recommendations</div>
+        <button
+          onclick="toggleRecsDrawer()"
+          class="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#222]"
+        >
+          <svg
+            class="w-4 h-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-1.5">
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-red"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-red/20 text-accent-red text-2xs font-medium rounded"
+              >CRITICAL</span
+            >
+            <span class="text-2xs text-gray-400">REC-1251</span>
+          </div>
+          <div class="text-xs mb-1">
+            Replace air filter immediately - pressure differential exceeds safe
+            threshold
+          </div>
+          <div class="text-2xs text-gray-400">SSP00273 • 2h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-yellow"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-yellow/20 text-accent-yellow text-2xs font-medium rounded"
+              >MONITOR</span
+            >
+            <span class="text-2xs text-gray-400">REC-1250</span>
+          </div>
+          <div class="text-xs mb-1">
+            Turbo inlet pressure trending high - schedule inspection
+          </div>
+          <div class="text-2xs text-gray-400">SSP00273 • 6h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1249</span>
+          </div>
+          <div class="text-xs mb-1">
+            Scheduled maintenance approaching - Dec 15, 2024
+          </div>
+          <div class="text-2xs text-gray-400">SSP00273 • 1 day</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1248</span>
+          </div>
+          <div class="text-xs mb-1">
+            Braking system at 91% lifecycle - plan replacement
+          </div>
+          <div class="text-2xs text-gray-400">SSP00273 • 2 days</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1247</span>
+          </div>
+          <div class="text-xs mb-1">
+            Cooling system approaching service interval
+          </div>
+          <div class="text-2xs text-gray-400">SSP00273 • 3 days</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Charts
+      Chart.defaults.color = "#737373";
+      Chart.defaults.borderColor = "#262626";
+      Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+      Chart.defaults.font.size = 10;
+
+      const timeLabels = [
+        "00:00",
+        "02:00",
+        "04:00",
+        "06:00",
+        "08:00",
+        "10:00",
+        "12:00",
+        "14:00",
+      ];
+
+      // Pressure Chart
+      new Chart(document.getElementById("chartPressure"), {
+        type: "line",
+        data: {
+          labels: timeLabels,
+          datasets: [
+            {
+              data: [10.2, 11.5, 12.8, 14.2, 15.1, 16.8, 17.5, 18.5],
+              borderColor: "#ff5252",
+              backgroundColor: "rgba(255, 82, 82, 0.1)",
+              fill: true,
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: "#1a1a1a" }, ticks: { maxTicksLimit: 6 } },
+            y: { grid: { color: "#1a1a1a" }, min: 0, max: 25 },
+          },
+          interaction: { intersect: false, mode: "index" },
+        },
+      });
+
+      // Atmospheric Chart
+      new Chart(document.getElementById("chartAtmospheric"), {
+        type: "line",
+        data: {
+          labels: timeLabels,
+          datasets: [
+            {
+              data: [98.0, 98.1, 97.9, 98.2, 98.3, 98.1, 98.0, 98.2],
+              borderColor: "#3b82f6",
+              backgroundColor: "rgba(59, 130, 246, 0.1)",
+              fill: true,
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: "#1a1a1a" }, ticks: { maxTicksLimit: 6 } },
+            y: { grid: { color: "#1a1a1a" }, min: 96, max: 100 },
+          },
+          interaction: { intersect: false, mode: "index" },
+        },
+      });
+
+      // Turbo Chart
+      new Chart(document.getElementById("chartTurbo"), {
+        type: "line",
+        data: {
+          labels: timeLabels,
+          datasets: [
+            {
+              data: [128, 132, 135, 138, 140, 139, 141, 142.5],
+              borderColor: "#00dc82",
+              backgroundColor: "rgba(0, 220, 130, 0.1)",
+              fill: true,
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: "#1a1a1a" }, ticks: { maxTicksLimit: 6 } },
+            y: { grid: { color: "#1a1a1a" }, min: 120, max: 160 },
+          },
+          interaction: { intersect: false, mode: "index" },
+        },
+      });
+
+      // Tab switching
+      function setMainTab(tab) {
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
+          if (btn.dataset.tab === tab) btn.classList.add("active");
+        });
+      }
+
+      // File upload handling
+      const uploadZone = document.getElementById("uploadZone");
+
+      uploadZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadZone.classList.add("drag-over");
+      });
+
+      uploadZone.addEventListener("dragleave", () => {
+        uploadZone.classList.remove("drag-over");
+      });
+
+      uploadZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove("drag-over");
+        handleFiles(e.dataTransfer.files);
+      });
+
+      function handleFileUpload(event) {
+        handleFiles(event.target.files);
+      }
+
+      function handleFiles(files) {
+        console.log("Files uploaded:", files);
+        // Add file handling logic here
+      }
+
+      // Theme toggle listener for chart updates
+      window.addEventListener("themeChanged", (e) => {
+        const isDark = e.detail.isDark;
+        const gridColor = isDark ? "#1a1a1a" : "#e5e7eb";
+        const textColor = isDark ? "#737373" : "#6b7280";
+
+        Chart.helpers.each(Chart.instances, (chart) => {
+          if (chart.options.scales) {
+            if (chart.options.scales.x) {
+              chart.options.scales.x.grid.color = gridColor;
+              chart.options.scales.x.ticks.color = textColor;
+            }
+            if (chart.options.scales.y) {
+              chart.options.scales.y.grid.color = gridColor;
+              chart.options.scales.y.ticks.color = textColor;
+            }
+          }
+          chart.update("none");
+        });
+      });
+
+      // Timeline slider
+      document
+        .querySelector(".timeline-slider")
+        .addEventListener("input", (e) => {
+          const value = e.target.value;
+          const startDate = new Date("2024-11-20");
+          const endDate = new Date("2024-11-28");
+          const range = endDate - startDate;
+          const currentDate = new Date(
+            startDate.getTime() + (range * value) / 100
+          );
+
+          document.getElementById("timeline-time").textContent =
+            currentDate.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }) +
+            " " +
+            currentDate.toLocaleTimeString("en-US", { hour12: false });
+        });
+    </script>
+    <!-- Shared JavaScript -->
+    <script src="js/app.js"></script>
+
+    <!-- Add padding for fixed bottom bar -->
+    <style>
+      main {
+        padding-bottom: 60px;
+      }
+    </style>
+  </body>
+</html>

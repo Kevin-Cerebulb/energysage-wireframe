@@ -63,15 +63,20 @@
         --scrollbar: #cbd5e1;
         --shadow: rgba(0, 0, 0, 0.1);
       }
+
       * {
         scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar) transparent;
       }
       *::-webkit-scrollbar {
         width: 4px;
         height: 4px;
       }
+      *::-webkit-scrollbar-track {
+        background: transparent;
+      }
       *::-webkit-scrollbar-thumb {
-        background: #d1d5db;
+        background: var(--scrollbar);
         border-radius: 2px;
       }
       .dark *::-webkit-scrollbar-thumb {
@@ -205,6 +210,11 @@
             class="px-3 py-2.5 text-xs font-medium border-b-2 border-accent-green dark:text-white"
           >
             <a href="./EquipmentDetails.html">Equipment Details</a>
+          </button>
+          <button
+            class="px-3 py-2.5 text-xs font-medium text-text-tertiary hover:text-text-secondary"
+          >
+            <a href="./FaultsOutliers.html">Faults & Outliers</a>
           </button>
         </nav>
       </div>
