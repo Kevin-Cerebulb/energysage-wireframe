@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EnergySage.ai | Equipment Detail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="css/styles.css" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["IBM Plex Sans", "system-ui", "sans-serif"],
+              mono: ["IBM Plex Mono", "monospace"],
+            },
+            colors: {
+              accent: {
+                green: "#00dc82",
+                red: "#ff5252",
+                yellow: "#f59e0b",
+                blue: "#3b82f6",
+                purple: "#8b5cf6",
+              },
+            },
+            fontSize: { "2xs": "0.65rem" },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        --bg-primary: #0d0d0d;
+        --bg-secondary: #141414;
+        --bg-tertiary: #1a1a1a;
+        --bg-hover: #222;
+        --border-primary: #262626;
+        --border-secondary: #333;
+        --text-primary: #fff;
+        --text-secondary: #a3a3a3;
+        --text-tertiary: #737373;
+        --scrollbar: #333;
+        --shadow: rgba(0, 0, 0, 0.5);
+      }
+
+      .light-mode {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f1f5f9;
+        --bg-hover: #e2e8f0;
+        --border-primary: #e2e8f0;
+        --border-secondary: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-tertiary: #94a3b8;
+        --scrollbar: #cbd5e1;
+        --shadow: rgba(0, 0, 0, 0.1);
+      }
+      * {
+        scrollbar-width: thin;
+      }
+      *::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      *::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 2px;
+      }
+      .dark *::-webkit-scrollbar-thumb {
+        background: #333;
+      }
+
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .toggle-bg {
+        transition: background 0.2s;
+      }
+      .toggle-dot {
+        transition: transform 0.2s;
+      }
+      input:checked + .toggle-bg {
+        background-color: #00dc82;
+      }
+      input:checked + .toggle-bg .toggle-dot {
+        transform: translateX(14px);
+      }
+
+      .section-card {
+        transition: all 0.15s;
+      }
+      .section-card:hover {
+        border-color: rgba(0, 220, 130, 0.3);
+      }
+
+      .table-row {
+        transition: background 0.1s;
+        cursor: pointer;
+      }
+      .table-row:hover {
+        background: #f9fafb;
+      }
+      .dark .table-row:hover {
+        background: #1a1a1a;
+      }
+
+      .gauge-container {
+        position: relative;
+      }
+      .gauge-label {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: 15px;
+        top: 32px;
+        bottom: -8px;
+        width: 1px;
+        background: #e5e7eb;
+      }
+      .dark .timeline-item::before {
+        background: #333;
+      }
+      .timeline-item:last-child::before {
+        display: none;
+      }
+
+      .tab-active {
+        border-bottom: 2px solid #00dc82;
+        color: inherit;
+      }
+      .live-indicator {
+        background: #f1f5f9;
+      }
+
+      .dark .live-indicator {
+        background: #1a1a1a;
+      }
+    </style>
+  </head>
+  <body
+    class="font-sans text-sm antialiased bg-gray-50 text-gray-900 dark:bg-[#0a0a0a] dark:text-white"
+  >
+    <!-- Header -->
+    <header
+      class="h-10 border-b bg-white dark:bg-[#111] border-gray-200 dark:border-[#222] flex items-center px-3 sticky top-0 z-50"
+    >
+      <div class="flex items-center gap-3 flex-1">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-5 h-5 rounded bg-accent-green flex items-center justify-center"
+          >
+            <svg
+              class="w-3 h-3 text-black"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <span class="font-semibold text-xs">EnergySage</span>
+        </div>
+        <nav class="flex items-center gap-1 ml-4">
+          <button
+            class="px-3 py-2.5 text-xs font-medium text-text-tertiary hover:text-text-secondary"
+          >
+            <a href="./LandingPage.html">KPI</a>
+          </button>
+          <button
+            class="px-3 py-2.5 text-xs font-medium text-text-tertiary hover:text-text-secondary"
+          >
+            <a href="./AssetSummary.html">Assets Summary</a>
+          </button>
+          <button
+            class="px-3 py-2.5 text-xs font-medium border-b-2 border-accent-green dark:text-white"
+          >
+            <a href="./EquipmentDetails.html">Equipment Details</a>
+          </button>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="relative">
+          <svg
+            class="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search assets, faults..."
+            class="w-40 bg-gray-100 dark:bg-[#1a1a1a] border-0 rounded px-2 py-1 pl-6 text-2xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-accent-green"
+          />
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            id="themeToggle"
+            class="sr-only peer"
+            onchange="toggleTheme()"
+          />
+          <div
+            class="toggle-bg w-8 h-[18px] bg-gray-300 dark:bg-[#333] rounded-full relative"
+          >
+            <div
+              class="toggle-dot absolute left-0.5 top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow flex items-center justify-center"
+            >
+              <svg
+                class="w-2 h-2 text-gray-500 dark:hidden"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                />
+              </svg>
+              <svg
+                class="w-2 h-2 text-gray-500 hidden dark:block"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+                />
+              </svg>
+            </div>
+          </div>
+        </label>
+        <div>
+          <div
+            class="live-indicator dark:live-indicator flex items-center gap-1.5 px-2 py-1 rounded text-2xs"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-accent-green pulse"></span>
+            <span class="text-dynamic-tertiary">Live</span>
+            <span class="text-dynamic-tertiary">•</span>
+            <span
+              class="text-dynamic-secondary font-mono"
+              id="live-time-display"
+              >10:42:15</span
+            >
+          </div>
+        </div>
+
+        <button
+          onclick="toggleRecsDrawer()"
+          class="relative p-1.5 rounded hover:bg-gray-100 dark:hover:bg-[#222]"
+        >
+          <svg
+            class="w-4 h-4 text-gray-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          <span
+            class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-accent-red rounded-full text-2xs flex items-center justify-center font-medium text-white"
+            >7</span
+          >
+        </button>
+        <div
+          class="w-5 h-5 rounded-full bg-accent-blue text-2xs font-medium flex items-center justify-center text-white"
+        >
+          J
+        </div>
+      </div>
+    </header>
+
+    <!-- Breadcrumb -->
+    <div
+      class="h-8 border-b bg-white dark:bg-[#0f0f0f] border-gray-200 dark:border-[#222] flex items-center px-3 text-2xs"
+    >
+      <a
+        href="#"
+        class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+        >Assets</a
+      >
+      <svg
+        class="w-3 h-3 mx-1.5 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 5l7 7-7 7"
+        />
+      </svg>
+      <a
+        href="#"
+        class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+        >Nevada Gold Mine</a
+      >
+      <svg
+        class="w-3 h-3 mx-1.5 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 5l7 7-7 7"
+        />
+      </svg>
+      <span class="text-gray-900 dark:text-white font-medium">EQ-002158</span>
+    </div>
+
+    <!-- Main Content -->
+    <main class="p-3">
+      <!-- Equipment Header Section -->
+      <div
+        class="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#222] rounded-lg overflow-hidden mb-3"
+      >
+        <div class="flex">
+          <!-- Equipment Image -->
+          <div
+            class="w-64 h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#1a1a1a] dark:to-[#222] flex items-center justify-center relative"
+          >
+            <svg
+              class="w-24 h-24 text-gray-300 dark:text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+            <div class="absolute bottom-2 left-2 right-2 flex gap-1">
+              <span
+                class="px-1.5 py-0.5 bg-black/50 backdrop-blur text-white text-2xs rounded"
+                >CAT 797F</span
+              >
+              <span
+                class="px-1.5 py-0.5 bg-accent-yellow/90 text-black text-2xs rounded font-medium"
+                >Not Ready</span
+              >
+            </div>
+          </div>
+
+          <!-- Equipment Info -->
+          <div class="flex-1 p-4">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <h1 class="text-lg font-semibold">
+                    Caterpillar 797F Mining Truck
+                  </h1>
+                  <span
+                    class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow text-2xs rounded font-medium"
+                    >5 Active Faults</span
+                  >
+                </div>
+                <div class="flex items-center gap-3 text-2xs text-gray-500">
+                  <span class="font-mono">EQ-002158</span>
+                  <span>•</span>
+                  <span>Nevada Gold Mine</span>
+                  <span>•</span>
+                  <span>Serial: CAT-797F-2019-0847</span>
+                </div>
+              </div>
+              <button
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-accent-green text-black text-xs font-medium rounded hover:bg-accent-green/90 transition-colors"
+              >
+                <svg
+                  class="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                View Recommendations
+              </button>
+            </div>
+
+            <!-- Real-time KPIs -->
+            <div class="grid grid-cols-6 gap-3">
+              <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                <div class="text-2xs text-gray-500 mb-0.5">Engine Hours</div>
+                <div class="text-base font-semibold">31,456</div>
+              </div>
+              <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                <div class="text-2xs text-gray-500 mb-0.5">Fuel Level</div>
+                <div class="text-base font-semibold">67%</div>
+              </div>
+              <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                <div class="text-2xs text-gray-500 mb-0.5">Coolant Temp</div>
+                <div class="text-base font-semibold text-accent-yellow">
+                  98°C
+                </div>
+              </div>
+              <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                <div class="text-2xs text-gray-500 mb-0.5">Oil Pressure</div>
+                <div class="text-base font-semibold">42 PSI</div>
+              </div>
+              <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                <div class="text-2xs text-gray-500 mb-0.5">Load Factor</div>
+                <div class="text-base font-semibold">78%</div>
+              </div>
+              <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                <div class="text-2xs text-gray-500 mb-0.5">Last Updated</div>
+                <div class="text-base font-semibold text-accent-green">
+                  2m ago
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Grid -->
+      <div class="grid grid-cols-12 gap-3">
+        <!-- Left Column: Operational Sections -->
+        <div class="col-span-8 space-y-3">
+          <!-- Section Tabs -->
+          <div
+            class="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#222] rounded-lg"
+          >
+            <div class="flex border-b border-gray-100 dark:border-[#222] px-3">
+              <button
+                class="px-3 py-2 text-xs font-medium tab-active"
+                onclick="showSection('engine')"
+              >
+                Engine
+              </button>
+              <button
+                class="px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                onclick="showSection('generator')"
+              >
+                Generator
+              </button>
+              <button
+                class="px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                onclick="showSection('bop')"
+              >
+                Balance of Plant
+              </button>
+              <button
+                class="px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                onclick="showSection('health')"
+              >
+                Health
+              </button>
+            </div>
+
+            <!-- Engine Section -->
+            <div id="section-engine" class="p-3">
+              <div class="grid grid-cols-3 gap-3">
+                <!-- Air & Exhaust -->
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-7 h-7 rounded-lg bg-accent-blue/10 flex items-center justify-center"
+                      >
+                        <svg
+                          class="w-4 h-4 text-accent-blue"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"
+                          />
+                        </svg>
+                      </div>
+                      <span class="text-xs font-medium">Air & Exhaust</span>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Active Faults</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-red/10 text-accent-red rounded font-medium"
+                        >2</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Open Recommendations</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded font-medium"
+                        >3</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Last Inspection</span>
+                      <span>12 days ago</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cooling & Lubrication -->
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-7 h-7 rounded-lg bg-accent-yellow/10 flex items-center justify-center"
+                      >
+                        <svg
+                          class="w-4 h-4 text-accent-yellow"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                          />
+                        </svg>
+                      </div>
+                      <span class="text-xs font-medium">Cooling & Lube</span>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Active Faults</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded font-medium"
+                        >1</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Open Recommendations</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded font-medium"
+                        >2</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Last Inspection</span>
+                      <span>5 days ago</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fuel System -->
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-7 h-7 rounded-lg bg-accent-green/10 flex items-center justify-center"
+                      >
+                        <svg
+                          class="w-4 h-4 text-accent-green"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                      </div>
+                      <span class="text-xs font-medium">Fuel System</span>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Active Faults</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-gray-200 dark:bg-[#333] text-gray-600 dark:text-gray-400 rounded font-medium"
+                        >0</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Open Recommendations</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-gray-200 dark:bg-[#333] text-gray-600 dark:text-gray-400 rounded font-medium"
+                        >0</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Last Inspection</span>
+                      <span>2 days ago</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Generator Section (hidden by default) -->
+            <div id="section-generator" class="p-3 hidden">
+              <div class="grid grid-cols-2 gap-3">
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center gap-2 mb-3">
+                    <div
+                      class="w-7 h-7 rounded-lg bg-accent-purple/10 flex items-center justify-center"
+                    >
+                      <svg
+                        class="w-4 h-4 text-accent-purple"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                      </svg>
+                    </div>
+                    <span class="text-xs font-medium">Mechanical</span>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Active Faults</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-red/10 text-accent-red rounded font-medium"
+                        >1</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Open Recommendations</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded font-medium"
+                        >2</span
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center gap-2 mb-3">
+                    <div
+                      class="w-7 h-7 rounded-lg bg-accent-blue/10 flex items-center justify-center"
+                    >
+                      <svg
+                        class="w-4 h-4 text-accent-blue"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    </div>
+                    <span class="text-xs font-medium">Electrical</span>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Active Faults</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-gray-200 dark:bg-[#333] text-gray-600 dark:text-gray-400 rounded font-medium"
+                        >0</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Open Recommendations</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded font-medium"
+                        >1</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Balance of Plant Section (hidden) -->
+            <div id="section-bop" class="p-3 hidden">
+              <div class="grid grid-cols-2 gap-3">
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center gap-2 mb-3">
+                    <div
+                      class="w-7 h-7 rounded-lg bg-accent-green/10 flex items-center justify-center"
+                    >
+                      <svg
+                        class="w-4 h-4 text-accent-green"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                        />
+                      </svg>
+                    </div>
+                    <span class="text-xs font-medium">Mechanical</span>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Active Faults</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-gray-200 dark:bg-[#333] text-gray-600 dark:text-gray-400 rounded font-medium"
+                        >0</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Open Recommendations</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-gray-200 dark:bg-[#333] text-gray-600 dark:text-gray-400 rounded font-medium"
+                        >0</span
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center gap-2 mb-3">
+                    <div
+                      class="w-7 h-7 rounded-lg bg-accent-blue/10 flex items-center justify-center"
+                    >
+                      <svg
+                        class="w-4 h-4 text-accent-blue"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    </div>
+                    <span class="text-xs font-medium">Electrical</span>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Active Faults</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded font-medium"
+                        >1</span
+                      >
+                    </div>
+                    <div class="flex items-center justify-between text-2xs">
+                      <span class="text-gray-500">Open Recommendations</span>
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded font-medium"
+                        >1</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Health Section (hidden) -->
+            <div id="section-health" class="p-3 hidden">
+              <div class="grid grid-cols-2 gap-3">
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center gap-2 mb-3">
+                    <div
+                      class="w-7 h-7 rounded-lg bg-accent-red/10 flex items-center justify-center"
+                    >
+                      <svg
+                        class="w-4 h-4 text-accent-red"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
+                    </div>
+                    <span class="text-xs font-medium">Electrical Health</span>
+                  </div>
+                  <div class="text-center py-3">
+                    <div class="text-3xl font-bold text-accent-yellow">78%</div>
+                    <div class="text-2xs text-gray-500 mt-1">Health Score</div>
+                  </div>
+                  <div
+                    class="h-1.5 bg-gray-200 dark:bg-[#333] rounded-full overflow-hidden"
+                  >
+                    <div
+                      class="h-full bg-accent-yellow rounded-full"
+                      style="width: 78%"
+                    ></div>
+                  </div>
+                </div>
+                <div
+                  class="section-card bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+                >
+                  <div class="flex items-center gap-2 mb-3">
+                    <div
+                      class="w-7 h-7 rounded-lg bg-accent-green/10 flex items-center justify-center"
+                    >
+                      <svg
+                        class="w-4 h-4 text-accent-green"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
+                      </svg>
+                    </div>
+                    <span class="text-xs font-medium">Mechanical Health</span>
+                  </div>
+                  <div class="text-center py-3">
+                    <div class="text-3xl font-bold text-accent-green">92%</div>
+                    <div class="text-2xs text-gray-500 mt-1">Health Score</div>
+                  </div>
+                  <div
+                    class="h-1.5 bg-gray-200 dark:bg-[#333] rounded-full overflow-hidden"
+                  >
+                    <div
+                      class="h-full bg-accent-green rounded-full"
+                      style="width: 92%"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Table -->
+          <div
+            class="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#222] rounded-lg overflow-hidden"
+          >
+            <div
+              class="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-[#222]"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-medium">Fault & Outlier Summary</span>
+                <span class="text-2xs text-gray-400">8 items</span>
+              </div>
+              <button class="text-2xs text-accent-blue hover:underline">
+                View All Outliers →
+              </button>
+            </div>
+            <div class="overflow-auto" style="max-height: 240px">
+              <table class="w-full text-xs">
+                <thead class="sticky top-0 bg-gray-50 dark:bg-[#111]">
+                  <tr class="border-b border-gray-100 dark:border-[#222]">
+                    <th class="text-left px-3 py-2 font-medium text-gray-500">
+                      Description
+                    </th>
+                    <th
+                      class="text-left px-3 py-2 font-medium text-gray-500 w-20"
+                    >
+                      Severity
+                    </th>
+                    <th
+                      class="text-right px-3 py-2 font-medium text-gray-500 w-20"
+                    >
+                      Threshold
+                    </th>
+                    <th
+                      class="text-right px-3 py-2 font-medium text-gray-500 w-16"
+                    >
+                      Min
+                    </th>
+                    <th
+                      class="text-right px-3 py-2 font-medium text-gray-500 w-16"
+                    >
+                      Max
+                    </th>
+                    <th class="w-10"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 dark:divide-[#1a1a1a]">
+                  <tr class="table-row" onclick="goToOutliers()">
+                    <td class="px-3 py-2">Exhaust Gas Temperature High</td>
+                    <td class="px-3 py-2">
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-red/10 text-accent-red rounded text-2xs font-medium"
+                        >Critical</span
+                      >
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">650°C</td>
+                    <td class="px-3 py-2 text-right font-mono">612</td>
+                    <td class="px-3 py-2 text-right font-mono text-accent-red">
+                      687
+                    </td>
+                    <td class="px-3 py-2">
+                      <svg
+                        class="w-3.5 h-3.5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr class="table-row" onclick="goToOutliers()">
+                    <td class="px-3 py-2">Coolant Temperature Elevated</td>
+                    <td class="px-3 py-2">
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-red/10 text-accent-red rounded text-2xs font-medium"
+                        >Critical</span
+                      >
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">95°C</td>
+                    <td class="px-3 py-2 text-right font-mono">89</td>
+                    <td class="px-3 py-2 text-right font-mono text-accent-red">
+                      98
+                    </td>
+                    <td class="px-3 py-2">
+                      <svg
+                        class="w-3.5 h-3.5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr class="table-row" onclick="goToOutliers()">
+                    <td class="px-3 py-2">Turbo Boost Pressure Variance</td>
+                    <td class="px-3 py-2">
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded text-2xs font-medium"
+                        >Warning</span
+                      >
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">±5%</td>
+                    <td class="px-3 py-2 text-right font-mono">-4.2</td>
+                    <td
+                      class="px-3 py-2 text-right font-mono text-accent-yellow"
+                    >
+                      +7.8
+                    </td>
+                    <td class="px-3 py-2">
+                      <svg
+                        class="w-3.5 h-3.5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr class="table-row" onclick="goToOutliers()">
+                    <td class="px-3 py-2">Oil Pressure Fluctuation</td>
+                    <td class="px-3 py-2">
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow rounded text-2xs font-medium"
+                        >Warning</span
+                      >
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">40 PSI</td>
+                    <td class="px-3 py-2 text-right font-mono">38</td>
+                    <td class="px-3 py-2 text-right font-mono">45</td>
+                    <td class="px-3 py-2">
+                      <svg
+                        class="w-3.5 h-3.5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr class="table-row" onclick="goToOutliers()">
+                    <td class="px-3 py-2">Fuel Consumption Rate</td>
+                    <td class="px-3 py-2">
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-blue/10 text-accent-blue rounded text-2xs font-medium"
+                        >Info</span
+                      >
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">85 L/h</td>
+                    <td class="px-3 py-2 text-right font-mono">78</td>
+                    <td class="px-3 py-2 text-right font-mono">92</td>
+                    <td class="px-3 py-2">
+                      <svg
+                        class="w-3.5 h-3.5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </td>
+                  </tr>
+                  <tr class="table-row" onclick="goToOutliers()">
+                    <td class="px-3 py-2">Battery Voltage</td>
+                    <td class="px-3 py-2">
+                      <span
+                        class="px-1.5 py-0.5 bg-accent-blue/10 text-accent-blue rounded text-2xs font-medium"
+                        >Info</span
+                      >
+                    </td>
+                    <td class="px-3 py-2 text-right font-mono">24V</td>
+                    <td class="px-3 py-2 text-right font-mono">23.8</td>
+                    <td class="px-3 py-2 text-right font-mono">24.6</td>
+                    <td class="px-3 py-2">
+                      <svg
+                        class="w-3.5 h-3.5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Gauges & Notes -->
+        <div class="col-span-4 space-y-3">
+          <!-- Gauge Charts -->
+          <div
+            class="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#222] rounded-lg p-3"
+          >
+            <div class="text-xs font-medium mb-3">Performance Gauges</div>
+            <div class="grid grid-cols-3 gap-3">
+              <div class="gauge-container pl-5">
+                <canvas id="gaugeEfficiency" width="80" height="80"></canvas>
+                <div class="gauge-label">
+                  <div class="text-sm font-bold">82%</div>
+                  <div class="text-2xs text-gray-500">Efficiency</div>
+                </div>
+              </div>
+              <div class="gauge-container pl-5">
+                <canvas id="gaugePower" width="80" height="80"></canvas>
+                <div class="gauge-label">
+                  <div class="text-sm font-bold">
+                    2.4<span class="text-2xs">MW</span>
+                  </div>
+                  <div class="text-2xs text-gray-500">Power</div>
+                </div>
+              </div>
+              <div class="gauge-container pl-5">
+                <canvas id="gaugeUtilization" width="80" height="80"></canvas>
+                <div class="gauge-label">
+                  <div class="text-sm font-bold">67%</div>
+                  <div class="text-2xs text-gray-500">Utilization</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Technician Notes -->
+          <div
+            class="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#222] rounded-lg overflow-hidden flex flex-col"
+            style="max-height: 420px"
+          >
+            <div
+              class="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-[#222]"
+            >
+              <div class="text-xs font-medium">Technician Notes</div>
+              <button class="text-2xs text-accent-green hover:underline">
+                + Add Note
+              </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3 space-y-3">
+              <!-- Note 1 -->
+              <div class="timeline-item relative pl-8">
+                <div
+                  class="absolute left-0 top-0 w-8 h-8 rounded-full bg-accent-blue/10 flex items-center justify-center text-2xs font-medium text-accent-blue"
+                >
+                  MR
+                </div>
+                <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-2xs font-medium">Mike Rodriguez</span>
+                    <span class="text-2xs text-gray-400">2 hours ago</span>
+                  </div>
+                  <p class="text-2xs text-gray-600 dark:text-gray-300 mb-2">
+                    Inspected exhaust system. Found buildup in turbo housing.
+                    Scheduled cleaning for next maintenance window.
+                  </p>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="px-1.5 py-0.5 bg-accent-red/10 text-accent-red text-2xs rounded"
+                      >Fault #1247</span
+                    >
+                    <span class="text-2xs text-gray-400">📎 2 files</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Note 2 -->
+              <div class="timeline-item relative pl-8">
+                <div
+                  class="absolute left-0 top-0 w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center text-2xs font-medium text-accent-green"
+                >
+                  SJ
+                </div>
+                <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-2xs font-medium">Sarah Johnson</span>
+                    <span class="text-2xs text-gray-400">Yesterday</span>
+                  </div>
+                  <p class="text-2xs text-gray-600 dark:text-gray-300 mb-2">
+                    Coolant system topped up. Noticed slight discoloration -
+                    recommend full flush at 32,000 hours.
+                  </p>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="px-1.5 py-0.5 bg-accent-yellow/10 text-accent-yellow text-2xs rounded"
+                      >REC #892</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- Note 3 -->
+              <div class="timeline-item relative pl-8">
+                <div
+                  class="absolute left-0 top-0 w-8 h-8 rounded-full bg-accent-purple/10 flex items-center justify-center text-2xs font-medium text-accent-purple"
+                >
+                  TK
+                </div>
+                <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-2xs font-medium">Tom Kim</span>
+                    <span class="text-2xs text-gray-400">3 days ago</span>
+                  </div>
+                  <p class="text-2xs text-gray-600 dark:text-gray-300">
+                    Replaced air filters. All engine parameters within normal
+                    range post-replacement.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Note 4 -->
+              <div class="timeline-item relative pl-8">
+                <div
+                  class="absolute left-0 top-0 w-8 h-8 rounded-full bg-accent-yellow/10 flex items-center justify-center text-2xs font-medium text-accent-yellow"
+                >
+                  AL
+                </div>
+                <div class="bg-gray-50 dark:bg-[#1a1a1a] rounded-lg p-2.5">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-2xs font-medium">Alex Lee</span>
+                    <span class="text-2xs text-gray-400">1 week ago</span>
+                  </div>
+                  <p class="text-2xs text-gray-600 dark:text-gray-300 mb-2">
+                    Completed 30,000 hour major service. Replaced injectors,
+                    checked all seals. Unit performing well.
+                  </p>
+                  <div class="flex items-center gap-2">
+                    <span class="text-2xs text-gray-400">📎 5 files</span>
+                    <span class="text-2xs text-gray-400">🖼 3 images</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Add Note Input -->
+            <div class="p-2 border-t border-gray-100 dark:border-[#222]">
+              <div class="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Add a note..."
+                  class="flex-1 bg-gray-50 dark:bg-[#1a1a1a] border-0 rounded px-2.5 py-1.5 text-2xs focus:outline-none focus:ring-1 focus:ring-accent-green"
+                />
+                <button class="p-1.5 rounded bg-accent-green text-black">
+                  <svg
+                    class="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Recommendations Drawer -->
+    <div
+      id="recs-overlay"
+      class="fixed inset-0 bg-black/40 z-40 hidden"
+      onclick="toggleRecsDrawer()"
+    ></div>
+    <div
+      id="recs-drawer"
+      class="fixed right-0 top-0 bottom-0 w-80 bg-white dark:bg-[#111] border-l border-gray-200 dark:border-[#222] z-50 flex flex-col transform translate-x-full transition-transform duration-300"
+    >
+      <div
+        class="h-8 border-b border-gray-200 dark:border-[#222] flex items-center justify-between px-3"
+      >
+        <div class="font-medium text-sm">Recommendations</div>
+        <button
+          onclick="toggleRecsDrawer()"
+          class="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#222]"
+        >
+          <svg
+            class="w-4 h-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-1.5">
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-red"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-red/20 text-accent-red text-2xs font-medium rounded"
+              >CRITICAL</span
+            >
+            <span class="text-2xs text-gray-400">REC-1247</span>
+          </div>
+          <div class="text-xs mb-1">
+            Exhaust gas temperature exceeds threshold
+          </div>
+          <div class="text-2xs text-gray-400">CAT 797F • 2h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-red"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-red/20 text-accent-red text-2xs font-medium rounded"
+              >CRITICAL</span
+            >
+            <span class="text-2xs text-gray-400">REC-1246</span>
+          </div>
+          <div class="text-xs mb-1">
+            Coolant temperature elevated - inspection required
+          </div>
+          <div class="text-2xs text-gray-400">CAT 797F • 3h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-yellow"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-yellow/20 text-accent-yellow text-2xs font-medium rounded"
+              >MONITOR</span
+            >
+            <span class="text-2xs text-gray-400">REC-1245</span>
+          </div>
+          <div class="text-xs mb-1">Turbo boost pressure variance detected</div>
+          <div class="text-2xs text-gray-400">CAT 797F • 6h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-yellow"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-yellow/20 text-accent-yellow text-2xs font-medium rounded"
+              >MONITOR</span
+            >
+            <span class="text-2xs text-gray-400">REC-1244</span>
+          </div>
+          <div class="text-xs mb-1">
+            Oil pressure fluctuation outside normal range
+          </div>
+          <div class="text-2xs text-gray-400">CAT 797F • 12h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1243</span>
+          </div>
+          <div class="text-xs mb-1">Fuel consumption rate above baseline</div>
+          <div class="text-2xs text-gray-400">CAT 797F • 1 day</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1242</span>
+          </div>
+          <div class="text-xs mb-1">Battery voltage at lower threshold</div>
+          <div class="text-2xs text-gray-400">CAT 797F • 2 days</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1241</span>
+          </div>
+          <div class="text-xs mb-1">30,000 hour service approaching</div>
+          <div class="text-2xs text-gray-400">CAT 797F • 5 days</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Theme
+      function toggleTheme() {
+        document.documentElement.classList.toggle("dark");
+        localStorage.setItem(
+          "theme",
+          document.documentElement.classList.contains("dark") ? "dark" : "light"
+        );
+        drawGauges();
+      }
+
+      if (
+        localStorage.getItem("theme") === "dark" ||
+        (!localStorage.getItem("theme") &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("dark");
+        document.getElementById("themeToggle").checked = true;
+      }
+
+      // Section tabs
+      function showSection(section) {
+        ["engine", "generator", "bop", "health"].forEach((s) => {
+          document.getElementById("section-" + s).classList.add("hidden");
+        });
+        document
+          .getElementById("section-" + section)
+          .classList.remove("hidden");
+
+        document
+          .querySelectorAll(".tab-active")
+          .forEach((t) => t.classList.remove("tab-active"));
+        event.target.classList.add("tab-active");
+      }
+
+      // Gauge charts
+      function drawGauges() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const bgColor = isDark ? "#1a1a1a" : "#e5e7eb";
+
+        // Efficiency gauge
+        drawGauge("gaugeEfficiency", 82, "#00dc82", bgColor);
+        // Power gauge
+        drawGauge("gaugePower", 75, "#3b82f6", bgColor);
+        // Utilization gauge
+        drawGauge("gaugeUtilization", 67, "#f59e0b", bgColor);
+      }
+
+      function drawGauge(canvasId, value, color, bgColor) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext("2d");
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = 35;
+        const lineWidth = 6;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Background arc
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0.75 * Math.PI, 0.25 * Math.PI);
+        ctx.strokeStyle = bgColor;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // Value arc
+        const startAngle = 0.75 * Math.PI;
+        const endAngle = startAngle + (value / 100) * 1.5 * Math.PI;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = "round";
+        ctx.stroke();
+      }
+
+      function goToOutliers() {
+        // Navigate to outliers detail page
+        alert("Navigating to Outliers Details page...");
+      }
+
+      // Recommendations Drawer
+      function toggleRecsDrawer() {
+        const drawer = document.getElementById("recs-drawer");
+        const overlay = document.getElementById("recs-overlay");
+        drawer.classList.toggle("open");
+        overlay.classList.toggle("hidden");
+
+        if (drawer.classList.contains("open")) {
+          drawer.style.transform = "translateX(0)";
+        } else {
+          drawer.style.transform = "translateX(100%)";
+        }
+      }
+
+      // Init
+      document.addEventListener("DOMContentLoaded", drawGauges);
+
+      // Listen for theme changes to redraw gauges
+      window.addEventListener("themeChanged", drawGauges);
+
+      // Note: Keyboard shortcuts, theme toggle, and live time are handled by shared app.js
+    </script>
+    <!-- Shared JavaScript -->
+    <script src="js/app.js"></script>
+  </body>
+</html>

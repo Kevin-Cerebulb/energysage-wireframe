@@ -1,0 +1,493 @@
+/**
+ * EnergySage.ai - Shared Styles
+ * Common CSS for all pages
+ */
+
+/* ========================================
+   CSS Variables - Theme Colors
+   ======================================== */
+:root {
+  --bg-primary: #0d0d0d;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1a1a1a;
+  --bg-hover: #222;
+  --border-primary: #262626;
+  --border-secondary: #333;
+  --text-primary: #fff;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #737373;
+  --scrollbar: #333;
+  --shadow: rgba(0, 0, 0, 0.5);
+
+  /* Accent Colors */
+  --accent-green: #00dc82;
+  --accent-red: #ff5252;
+  --accent-yellow: #f59e0b;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+}
+
+/* Light Mode Variables - Only applied when .light-mode class is present */
+.light-mode {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --bg-hover: #e2e8f0;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  --scrollbar: #cbd5e1;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   Base Styles & Scrollbar
+   ======================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 2px;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: #333;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ========================================
+   Theme Toggle
+   ======================================== */
+.toggle-bg {
+  transition: background 0.2s;
+}
+
+.toggle-dot {
+  transition: transform 0.2s;
+}
+
+input:checked + .toggle-bg {
+  background-color: var(--accent-green);
+}
+
+input:checked + .toggle-bg .toggle-dot {
+  transform: translateX(14px);
+}
+
+/* ========================================
+   Header & Navigation
+   ======================================== */
+.header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.subheader {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.nav-active {
+  border-bottom: 2px solid var(--accent-green);
+  color: var(--text-primary);
+}
+
+.nav-inactive {
+  color: var(--text-tertiary);
+}
+
+.nav-inactive:hover {
+  color: var(--text-secondary);
+}
+
+/* ========================================
+   Input Fields
+   ======================================== */
+.input-field {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+}
+
+.input-field::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* ========================================
+   Widgets & Cards
+   ======================================== */
+.widget {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  transition: border-color 0.15s, background-color 0.2s;
+}
+
+.widget:hover {
+  border-color: var(--border-secondary);
+}
+
+.section-card {
+  transition: all 0.15s;
+}
+
+.section-card:hover {
+  border-color: rgba(0, 220, 130, 0.3);
+}
+
+/* ========================================
+   Badges & Indicators
+   ======================================== */
+.badge {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.live-indicator {
+  background: var(--bg-tertiary);
+}
+
+.stat-up {
+  color: var(--accent-green);
+}
+
+.stat-down {
+  color: var(--accent-red);
+}
+
+/* ========================================
+   Dropdowns
+   ======================================== */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 180px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  z-index: 100;
+  margin-top: 4px;
+  box-shadow: 0 10px 40px var(--shadow);
+}
+
+.dropdown-menu.open {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.dropdown-item:hover {
+  background: var(--bg-hover);
+}
+
+.dropdown-item.selected {
+  background: rgba(0, 220, 130, 0.1);
+}
+
+/* ========================================
+   Checkbox
+   ======================================== */
+.checkbox {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox.checked {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+/* ========================================
+   Panels & Drawers
+   ======================================== */
+.site-panel {
+  transform: translateX(100%);
+  transition: transform 0.25s ease-out;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-primary);
+}
+
+.site-panel.open {
+  transform: translateX(0);
+}
+
+.recs-drawer {
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-primary);
+}
+
+/* ========================================
+   Date Picker
+   ======================================== */
+.date-picker {
+  position: relative;
+}
+
+.date-picker-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  z-index: 100;
+  margin-top: 4px;
+  padding: 12px;
+  box-shadow: 0 10px 40px var(--shadow);
+}
+
+.date-picker-dropdown.open {
+  display: block;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+.calendar-day:hover {
+  background: var(--bg-hover);
+}
+
+.calendar-day.selected {
+  background: var(--accent-green);
+  color: #000;
+}
+
+.calendar-day.in-range {
+  background: rgba(0, 220, 130, 0.2);
+}
+
+.calendar-day.other-month {
+  color: var(--text-tertiary);
+}
+
+/* ========================================
+   Tables
+   ======================================== */
+.table-row {
+  transition: background 0.1s;
+  cursor: pointer;
+}
+
+.table-row:hover {
+  background: #f9fafb;
+}
+
+.dark .table-row:hover {
+  background: #1a1a1a;
+}
+
+/* ========================================
+   Status Tabs (Asset Summary)
+   ======================================== */
+.status-tab {
+  transition: all 0.15s;
+}
+
+.status-tab.active {
+  background: var(--active-bg);
+  color: var(--active-color);
+}
+
+.status-tab:not(.active):hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dark .status-tab:not(.active):hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================
+   Map Styles (Asset Summary)
+   ======================================== */
+.map-container {
+  transition: height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
+  overflow: hidden;
+}
+
+.map-container.collapsed {
+  height: 0 !important;
+  opacity: 0;
+  margin-bottom: 0 !important;
+}
+
+.collapse-btn svg {
+  transition: transform 0.2s;
+}
+
+.collapse-btn.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+.cluster-marker {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Leaflet Dark Mode */
+.dark .leaflet-container {
+  background: #141414;
+}
+
+.dark .leaflet-tile {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
+
+.dark .leaflet-control-zoom a {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #333;
+}
+
+.leaflet-control-attribution {
+  display: none;
+}
+
+/* ========================================
+   Gauges (Equipment Details)
+   ======================================== */
+.gauge-container {
+  position: relative;
+}
+
+.gauge-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+/* ========================================
+   Timeline (Equipment Details)
+   ======================================== */
+.timeline-item {
+  position: relative;
+  padding-left: 40px;
+}
+
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: -12px;
+  width: 1px;
+  background: var(--border-primary);
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+/* ========================================
+   Dynamic Color Utilities
+   ======================================== */
+.bg-dynamic-primary {
+  background: var(--bg-primary);
+}
+.bg-dynamic-secondary {
+  background: var(--bg-secondary);
+}
+.bg-dynamic-tertiary {
+  background: var(--bg-tertiary);
+}
+.bg-dynamic-hover {
+  background: var(--bg-hover);
+}
+.border-dynamic-primary {
+  border-color: var(--border-primary);
+}
+.border-dynamic-secondary {
+  border-color: var(--border-secondary);
+}
+.text-dynamic-primary {
+  color: var(--text-primary);
+}
+.text-dynamic-secondary {
+  color: var(--text-secondary);
+}
+.text-dynamic-tertiary {
+  color: var(--text-tertiary);
+}
+
+/* ========================================
+   Hover Utilities
+   ======================================== */
+.hover-bg:hover {
+  background: var(--bg-hover);
+}

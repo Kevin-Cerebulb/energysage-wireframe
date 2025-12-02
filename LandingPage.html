@@ -1,0 +1,2199 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EnergySage.ai | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["IBM Plex Sans", "system-ui", "sans-serif"],
+              mono: ["IBM Plex Mono", "monospace"],
+            },
+            colors: {
+              accent: {
+                green: "#00dc82",
+                red: "#ff5252",
+                yellow: "#ffd60a",
+                blue: "#3b82f6",
+              },
+            },
+            fontSize: { "2xs": "0.65rem" },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        --bg-primary: #0d0d0d;
+        --bg-secondary: #141414;
+        --bg-tertiary: #1a1a1a;
+        --bg-hover: #222;
+        --border-primary: #262626;
+        --border-secondary: #333;
+        --text-primary: #fff;
+        --text-secondary: #a3a3a3;
+        --text-tertiary: #737373;
+        --scrollbar: #333;
+        --shadow: rgba(0, 0, 0, 0.5);
+      }
+
+      .light-mode {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f1f5f9;
+        --bg-hover: #e2e8f0;
+        --border-primary: #e2e8f0;
+        --border-secondary: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-tertiary: #94a3b8;
+        --scrollbar: #cbd5e1;
+        --shadow: rgba(0, 0, 0, 0.1);
+      }
+
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar) transparent;
+      }
+      *::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      *::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      *::-webkit-scrollbar-thumb {
+        background: var(--scrollbar);
+        border-radius: 2px;
+      }
+      body {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        transition: background-color 0.2s, color 0.2s;
+      }
+      .widget {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        transition: border-color 0.15s, background-color 0.2s;
+      }
+      .widget:hover {
+        border-color: var(--border-secondary);
+      }
+      .stat-up {
+        color: #00dc82;
+      }
+      .stat-down {
+        color: #ff5252;
+      }
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .dropdown {
+        position: relative;
+      }
+      .dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        min-width: 180px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-primary);
+        border-radius: 6px;
+        z-index: 100;
+        margin-top: 4px;
+        box-shadow: 0 10px 40px var(--shadow);
+      }
+      .dropdown-menu.open {
+        display: block;
+      }
+      .dropdown-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-primary);
+      }
+      .dropdown-item:hover {
+        background: var(--bg-hover);
+      }
+      .dropdown-item.selected {
+        background: rgba(0, 220, 130, 0.1);
+      }
+      .checkbox {
+        width: 14px;
+        height: 14px;
+        border: 1px solid var(--border-secondary);
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .checkbox.checked {
+        background: #00dc82;
+        border-color: #00dc82;
+      }
+      .site-panel {
+        transform: translateX(100%);
+        transition: transform 0.25s ease-out;
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border-primary);
+      }
+      .site-panel.open {
+        transform: translateX(0);
+      }
+      .date-picker {
+        position: relative;
+      }
+      .date-picker-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-primary);
+        border-radius: 6px;
+        z-index: 100;
+        margin-top: 4px;
+        padding: 12px;
+        box-shadow: 0 10px 40px var(--shadow);
+      }
+      .date-picker-dropdown.open {
+        display: block;
+      }
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+      }
+      .calendar-day {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        cursor: pointer;
+        border-radius: 4px;
+        color: var(--text-primary);
+      }
+      .calendar-day:hover {
+        background: var(--bg-hover);
+      }
+      .calendar-day.selected {
+        background: #00dc82;
+        color: #000;
+      }
+      .calendar-day.in-range {
+        background: rgba(0, 220, 130, 0.2);
+      }
+      .calendar-day.other-month {
+        color: var(--text-tertiary);
+      }
+
+      /* Theme toggle */
+      .toggle-bg {
+        transition: background 0.2s;
+      }
+      .toggle-dot {
+        transition: transform 0.2s;
+      }
+      input:checked + .toggle-bg {
+        background-color: #00dc82;
+      }
+      input:checked + .toggle-bg .toggle-dot {
+        transform: translateX(14px);
+      }
+
+      /* Dynamic color classes */
+      .bg-dynamic-primary {
+        background: var(--bg-primary);
+      }
+      .bg-dynamic-secondary {
+        background: var(--bg-secondary);
+      }
+      .bg-dynamic-tertiary {
+        background: var(--bg-tertiary);
+      }
+      .bg-dynamic-hover {
+        background: var(--bg-hover);
+      }
+      .border-dynamic-primary {
+        border-color: var(--border-primary);
+      }
+      .border-dynamic-secondary {
+        border-color: var(--border-secondary);
+      }
+      .text-dynamic-primary {
+        color: var(--text-primary);
+      }
+      .text-dynamic-secondary {
+        color: var(--text-secondary);
+      }
+      .text-dynamic-tertiary {
+        color: var(--text-tertiary);
+      }
+
+      /* Header styles */
+      .header {
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-primary);
+      }
+      .subheader {
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border-primary);
+      }
+      .input-field {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-primary);
+        color: var(--text-primary);
+      }
+      .input-field::placeholder {
+        color: var(--text-tertiary);
+      }
+      .nav-active {
+        border-bottom: 2px solid #00dc82;
+        color: var(--text-primary);
+      }
+      .nav-inactive {
+        color: var(--text-tertiary);
+      }
+      .nav-inactive:hover {
+        color: var(--text-secondary);
+      }
+      .badge {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+      }
+      .live-indicator {
+        background: var(--bg-tertiary);
+      }
+      .hover-bg:hover {
+        background: var(--bg-hover);
+      }
+      .recs-drawer {
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border-primary);
+      }
+    </style>
+  </head>
+  <body
+    class="font-sans text-sm antialiased bg-gray-50 text-gray-900 dark:bg-[#0a0a0a] dark:text-white"
+  >
+    <!-- Header -->
+    <header class="header h-11 flex items-center px-3 sticky top-0 z-50">
+      <div class="flex items-center gap-4 flex-1">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-6 h-6 rounded bg-accent-green flex items-center justify-center"
+          >
+            <svg
+              class="w-3.5 h-3.5 text-black"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <span class="font-semibold text-sm">EnergySage</span>
+        </div>
+        <nav class="flex items-center gap-1 ml-4">
+          <button class="px-3 py-2.5 text-xs font-medium nav-active">
+            <a href="./LandingPage.html">KPI</a>
+          </button>
+          <button class="px-3 py-2.5 text-xs font-medium nav-inactive">
+            <a href="./AssetSummary.html">Assets Summary</a>
+          </button>
+          <button class="px-3 py-2.5 text-xs font-medium nav-inactive">
+            <a href="./EquipmentDetails.html">Equipment Details</a>
+          </button>
+        </nav>
+      </div>
+      <div class="w-64 mx-4">
+        <div class="relative">
+          <svg
+            class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-dynamic-tertiary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search assets, faults..."
+            class="input-field w-full rounded px-2 py-1.5 pl-7 text-xs"
+          />
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- Theme Toggle -->
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            id="themeToggle"
+            class="sr-only peer"
+            onchange="toggleTheme()"
+          />
+          <div
+            class="toggle-bg w-8 h-[18px] bg-gray-300 dark:bg-[#333] rounded-full relative"
+          >
+            <div
+              class="toggle-dot absolute left-0.5 top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow flex items-center justify-center"
+            >
+              <svg
+                class="w-2 h-2 text-gray-500 sun-icon"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                />
+              </svg>
+              <svg
+                class="w-2 h-2 text-gray-500 moon-icon hidden"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+                />
+              </svg>
+            </div>
+          </div>
+        </label>
+        <div
+          class="live-indicator flex items-center gap-1.5 px-2 py-1 rounded text-2xs"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-green pulse"></span>
+          <span class="text-dynamic-tertiary">Live</span>
+          <span class="text-dynamic-tertiary">•</span>
+          <span class="text-dynamic-secondary font-mono" id="live-time"
+            >10:42:15</span
+          >
+        </div>
+        <button
+          onclick="toggleRecsDrawer()"
+          class="relative p-1.5 rounded hover-bg"
+        >
+          <svg
+            class="w-4 h-4 text-dynamic-secondary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+          <span
+            class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-accent-red rounded-full text-2xs flex items-center justify-center font-medium text-white"
+            >7</span
+          >
+        </button>
+        <div
+          class="w-6 h-6 rounded-full bg-accent-blue text-2xs font-medium flex items-center justify-center ml-1 text-white"
+        >
+          JD
+        </div>
+      </div>
+    </header>
+
+    <!-- Subheader with Dropdowns -->
+    <div
+      class="subheader h-9 flex items-center px-3 text-xs sticky top-11 z-40"
+    >
+      <div class="flex items-center gap-3 flex-1">
+        <span class="text-dynamic-tertiary">Viewing:</span>
+        <div class="flex items-center gap-1.5">
+          <span id="sites-count" class="badge px-1.5 py-0.5 rounded"
+            >3 Sites</span
+          >
+          <svg
+            class="w-3 h-3 text-text-tertiary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          <span
+            id="models-count"
+            class="px-1.5 py-0.5 bg-bg-tertiary rounded text-text-secondary"
+            >12 Models</span
+          >
+          <svg
+            class="w-3 h-3 text-text-tertiary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          <span
+            id="assets-count"
+            class="px-1.5 py-0.5 bg-bg-tertiary rounded text-text-secondary"
+            >847 Assets</span
+          >
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- Sites Dropdown -->
+        <div class="dropdown">
+          <button
+            onclick="toggleDropdown('sites')"
+            class="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-bg-hover text-text-secondary"
+          >
+            <span>Sites</span>
+            <span id="sites-selected" class="text-accent-green">3</span>
+            <svg
+              class="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          <div id="sites-dropdown" class="dropdown-menu">
+            <div class="p-2 border-b border-border-primary">
+              <button
+                onclick="selectAllSites()"
+                class="text-2xs text-accent-green hover:underline"
+              >
+                Select All
+              </button>
+              <span class="text-text-tertiary mx-1">|</span>
+              <button
+                onclick="clearAllSites()"
+                class="text-2xs text-text-tertiary hover:text-text-secondary"
+              >
+                Clear
+              </button>
+            </div>
+            <div
+              class="dropdown-item selected"
+              onclick="toggleSite(this, 'st-francis')"
+            >
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>St. Francis Medical</span>
+            </div>
+            <div
+              class="dropdown-item selected"
+              onclick="toggleSite(this, 'nevada')"
+            >
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>Nevada Gold Mine</span>
+            </div>
+            <div
+              class="dropdown-item selected"
+              onclick="toggleSite(this, 'central')"
+            >
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>Central Power Station</span>
+            </div>
+            <div class="dropdown-item" onclick="toggleSite(this, 'midwest')">
+              <div class="checkbox"></div>
+              <span>Midwest Distribution</span>
+            </div>
+          </div>
+        </div>
+        <!-- Models Dropdown -->
+        <div class="dropdown">
+          <button
+            onclick="toggleDropdown('models')"
+            class="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-bg-hover text-text-secondary"
+          >
+            <span>Models</span>
+            <span id="models-selected" class="text-accent-green">12</span>
+            <svg
+              class="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          <div id="models-dropdown" class="dropdown-menu">
+            <div class="p-2 border-b border-border-primary">
+              <button
+                onclick="selectAllModels()"
+                class="text-2xs text-accent-green hover:underline"
+              >
+                Select All
+              </button>
+              <span class="text-text-tertiary mx-1">|</span>
+              <button
+                onclick="clearAllModels()"
+                class="text-2xs text-text-tertiary hover:text-text-secondary"
+              >
+                Clear
+              </button>
+            </div>
+            <div class="dropdown-item selected" onclick="toggleModel(this)">
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>Generators</span>
+            </div>
+            <div class="dropdown-item selected" onclick="toggleModel(this)">
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>Turbines</span>
+            </div>
+            <div class="dropdown-item selected" onclick="toggleModel(this)">
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>Compressors</span>
+            </div>
+            <div class="dropdown-item selected" onclick="toggleModel(this)">
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>HVAC Units</span>
+            </div>
+            <div class="dropdown-item selected" onclick="toggleModel(this)">
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>Haul Trucks</span>
+            </div>
+            <div class="dropdown-item selected" onclick="toggleModel(this)">
+              <div class="checkbox checked">
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span>Pumps</span>
+            </div>
+          </div>
+        </div>
+        <div class="w-px h-4 bg-border-primary mx-1"></div>
+        <!-- Date Picker -->
+        <div class="date-picker">
+          <button
+            onclick="toggleDatePicker()"
+            class="flex items-center gap-1.5 px-2 py-1 bg-bg-tertiary rounded hover:bg-bg-hover"
+          >
+            <svg
+              class="w-3 h-3 text-text-tertiary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <span id="date-range" class="text-text-secondary"
+              >Jan 1 – Dec 31, 2024</span
+            >
+            <svg
+              class="w-3 h-3 text-text-tertiary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          <div
+            id="date-dropdown"
+            class="date-picker-dropdown"
+            style="width: 520px"
+          >
+            <div class="flex gap-4 mb-3">
+              <div class="flex-1">
+                <div class="text-2xs text-text-tertiary mb-2">Start Date</div>
+                <div class="flex items-center gap-2 mb-3">
+                  <button
+                    onclick="changeMonth(-1, 'start')"
+                    class="p-1 hover:bg-bg-hover rounded"
+                  >
+                    <svg
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+                  <span
+                    id="start-month"
+                    class="text-xs font-medium flex-1 text-center"
+                    >January 2024</span
+                  >
+                  <button
+                    onclick="changeMonth(1, 'start')"
+                    class="p-1 hover:bg-bg-hover rounded"
+                  >
+                    <svg
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div class="calendar-grid mb-1">
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Su
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Mo
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Tu
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    We
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Th
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Fr
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Sa
+                  </div>
+                </div>
+                <div id="start-calendar" class="calendar-grid"></div>
+              </div>
+              <div class="w-px bg-border-primary"></div>
+              <div class="flex-1">
+                <div class="text-2xs text-text-tertiary mb-2">End Date</div>
+                <div class="flex items-center gap-2 mb-3">
+                  <button
+                    onclick="changeMonth(-1, 'end')"
+                    class="p-1 hover:bg-bg-hover rounded"
+                  >
+                    <svg
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+                  <span
+                    id="end-month"
+                    class="text-xs font-medium flex-1 text-center"
+                    >December 2024</span
+                  >
+                  <button
+                    onclick="changeMonth(1, 'end')"
+                    class="p-1 hover:bg-bg-hover rounded"
+                  >
+                    <svg
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div class="calendar-grid mb-1">
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Su
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Mo
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Tu
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    We
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Th
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Fr
+                  </div>
+                  <div class="text-2xs text-text-tertiary text-center py-1">
+                    Sa
+                  </div>
+                </div>
+                <div id="end-calendar" class="calendar-grid"></div>
+              </div>
+            </div>
+            <div
+              class="flex items-center justify-between pt-3 border-t border-border-primary"
+            >
+              <div class="flex gap-2">
+                <button
+                  onclick="setPreset('ytd')"
+                  class="px-2 py-1 text-2xs bg-bg-tertiary rounded hover:bg-bg-hover"
+                >
+                  YTD
+                </button>
+                <button
+                  onclick="setPreset('q4')"
+                  class="px-2 py-1 text-2xs bg-bg-tertiary rounded hover:bg-bg-hover"
+                >
+                  Q4
+                </button>
+                <button
+                  onclick="setPreset('q3')"
+                  class="px-2 py-1 text-2xs bg-bg-tertiary rounded hover:bg-bg-hover"
+                >
+                  Q3
+                </button>
+                <button
+                  onclick="setPreset('30d')"
+                  class="px-2 py-1 text-2xs bg-bg-tertiary rounded hover:bg-bg-hover"
+                >
+                  Last 30d
+                </button>
+              </div>
+              <button
+                onclick="applyDateRange()"
+                class="px-3 py-1 text-2xs bg-accent-green text-black rounded font-medium hover:opacity-90"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs Row -->
+    <div class="px-2 pt-2 flex gap-2">
+      <div class="widget rounded-lg p-3 flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-2xs text-text-tertiary uppercase tracking-wide"
+            >Total Faults</span
+          >
+          <span
+            class="stat-down text-2xs font-medium flex items-center gap-0.5"
+          >
+            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414 6.707 7.707a1 1 0 01-1.414 0z"
+              /></svg
+            >12%
+          </span>
+        </div>
+        <div class="text-xl font-semibold">1,247</div>
+        <div class="text-2xs text-text-tertiary">vs 1,113 prior</div>
+      </div>
+      <div class="widget rounded-lg p-3 flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-2xs text-text-tertiary uppercase tracking-wide"
+            >Outliers</span
+          >
+          <span class="stat-up text-2xs font-medium flex items-center gap-0.5">
+            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 15.586l3.293-3.293a1 1 0 011.414 0z"
+              /></svg
+            >8%
+          </span>
+        </div>
+        <div class="text-xl font-semibold">342</div>
+        <div class="text-2xs text-text-tertiary">vs 372 prior</div>
+      </div>
+      <div class="widget rounded-lg p-3 flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-2xs text-text-tertiary uppercase tracking-wide"
+            >Open Cases</span
+          >
+          <span class="text-2xs text-accent-blue">Active</span>
+        </div>
+        <div class="text-xl font-semibold">89</div>
+        <div class="text-2xs text-text-tertiary">47 monitoring</div>
+      </div>
+      <div class="widget rounded-lg p-3 flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-2xs text-text-tertiary uppercase tracking-wide"
+            >Avg MTBF</span
+          >
+          <span class="stat-up text-2xs font-medium flex items-center gap-0.5">
+            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 4.414 6.707 7.707a1 1 0 01-1.414 0z"
+              /></svg
+            >15%
+          </span>
+        </div>
+        <div class="text-xl font-semibold">
+          847<span class="text-xs text-text-tertiary ml-1">hrs</span>
+        </div>
+        <div class="text-2xs text-text-tertiary">Mean time between faults</div>
+      </div>
+      <div class="widget rounded-lg p-3 flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-2xs text-text-tertiary uppercase tracking-wide"
+            >Avg MTTC</span
+          >
+          <span class="stat-up text-2xs font-medium flex items-center gap-0.5">
+            <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L10 15.586l3.293-3.293a1 1 0 011.414 0z"
+              /></svg
+            >22%
+          </span>
+        </div>
+        <div class="text-xl font-semibold">
+          4.2<span class="text-xs text-text-tertiary ml-1">days</span>
+        </div>
+        <div class="text-2xs text-text-tertiary">Mean time to close</div>
+      </div>
+      <div class="widget rounded-lg p-3 flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-2xs text-text-tertiary uppercase tracking-wide"
+            >Cases</span
+          >
+          <span class="text-2xs text-text-tertiary">292 total</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-12 h-12"><canvas id="casesChart"></canvas></div>
+          <div class="space-y-0.5 text-2xs">
+            <div class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>156
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent-blue"></span>89
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-accent-yellow"></span>47
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <main
+      class="p-2 grid grid-cols-12 gap-2"
+      style="height: calc(100vh - 160px)"
+    >
+      <!-- Charts Column -->
+      <div class="col-span-9 flex flex-col gap-2">
+        <div class="widget rounded-lg p-3 flex-1">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <div class="font-medium text-sm">Faults & Outliers</div>
+              <div class="text-2xs text-text-tertiary">
+                12-month trend analysis
+              </div>
+            </div>
+            <div class="flex items-center gap-3 text-2xs">
+              <div class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-accent-red"></span
+                ><span class="text-text-tertiary">Faults</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-accent-yellow"></span
+                ><span class="text-text-tertiary">Outliers</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-accent-green"></span
+                ><span class="text-text-tertiary">Total</span>
+              </div>
+            </div>
+          </div>
+          <div class="h-36"><canvas id="faultsChart"></canvas></div>
+        </div>
+        <div class="flex gap-2 flex-1">
+          <div class="widget rounded-lg p-3 flex-1">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <div class="font-medium text-sm">MTBF by Severity</div>
+                <div class="text-2xs text-text-tertiary">
+                  Hours between faults
+                </div>
+              </div>
+              <div class="flex items-center gap-2 text-2xs">
+                <div class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-accent-red"></span>L3
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-accent-yellow"></span
+                  >L2
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-accent-blue"></span
+                  >L1
+                </div>
+              </div>
+            </div>
+            <div class="h-28"><canvas id="mtbfChart"></canvas></div>
+          </div>
+          <div class="widget rounded-lg p-3 flex-1">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <div class="font-medium text-sm">
+                  Mean Time Between Shutdowns
+                </div>
+                <div class="text-2xs text-text-tertiary">
+                  Unexpected shutdown intervals
+                </div>
+              </div>
+              <span class="stat-up text-2xs">+18%</span>
+            </div>
+            <div class="h-28"><canvas id="mtbsChart"></canvas></div>
+          </div>
+        </div>
+        <div class="flex gap-2 flex-1">
+          <div class="widget rounded-lg p-3 w-2/5">
+            <div class="mb-3">
+              <div class="font-medium text-sm">Time to Close</div>
+              <div class="text-2xs text-text-tertiary">Days to resolve</div>
+            </div>
+            <div class="h-24"><canvas id="mttcChart"></canvas></div>
+          </div>
+          <div class="widget rounded-lg p-3 flex-1">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <div class="font-medium text-sm">Weekly Case Resolution</div>
+                <div class="text-2xs text-text-tertiary">
+                  Opened vs closed (12 weeks)
+                </div>
+              </div>
+              <div class="flex items-center gap-2 text-2xs">
+                <div class="flex items-center gap-1">
+                  <span class="w-2 h-2 rounded bg-accent-blue"></span>Open
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="w-2 h-2 rounded bg-accent-green"></span>Closed
+                </div>
+              </div>
+            </div>
+            <div class="h-24"><canvas id="weeklyChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Site Availability Column -->
+      <div class="col-span-3 flex flex-col gap-2">
+        <div class="widget rounded-lg p-3 flex-1 overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-medium text-sm">Site Availability</div>
+            <button class="text-2xs text-accent-green hover:underline">
+              View all
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto space-y-1.5 pr-1" id="sites-list">
+            <div
+              onclick="openSitePanel('st-francis')"
+              class="site-card p-2 bg-bg-tertiary rounded cursor-pointer hover:bg-bg-hover transition-colors"
+              data-site="st-francis"
+            >
+              <div class="flex items-center justify-between mb-1.5">
+                <div>
+                  <div class="text-xs font-medium">St. Francis Medical</div>
+                  <div class="text-2xs text-text-tertiary">
+                    Hospital • San Francisco
+                  </div>
+                </div>
+                <div class="text-sm font-semibold stat-up">98.7%</div>
+              </div>
+              <div
+                class="h-1 bg-bg-primary rounded-full overflow-hidden mb-1.5"
+              >
+                <div
+                  class="h-full bg-accent-green rounded-full"
+                  style="width: 98.7%"
+                ></div>
+              </div>
+              <div
+                class="flex items-center justify-between text-2xs text-text-tertiary"
+              >
+                <span>24 assets</span>
+                <span class="text-accent-yellow">3 alerts</span>
+                <span>0 critical</span>
+              </div>
+            </div>
+            <div
+              onclick="openSitePanel('nevada')"
+              class="site-card p-2 bg-bg-tertiary rounded cursor-pointer hover:bg-bg-hover transition-colors"
+              data-site="nevada"
+            >
+              <div class="flex items-center justify-between mb-1.5">
+                <div>
+                  <div class="text-xs font-medium">Nevada Gold Mine</div>
+                  <div class="text-2xs text-text-tertiary">
+                    Mining • Elko, NV
+                  </div>
+                </div>
+                <div class="text-sm font-semibold text-accent-yellow">
+                  94.2%
+                </div>
+              </div>
+              <div
+                class="h-1 bg-bg-primary rounded-full overflow-hidden mb-1.5"
+              >
+                <div
+                  class="h-full bg-accent-yellow rounded-full"
+                  style="width: 94.2%"
+                ></div>
+              </div>
+              <div
+                class="flex items-center justify-between text-2xs text-text-tertiary"
+              >
+                <span>156 assets</span>
+                <span class="text-accent-yellow">12 alerts</span>
+                <span class="text-accent-red">2 critical</span>
+              </div>
+            </div>
+            <div
+              onclick="openSitePanel('central')"
+              class="site-card p-2 bg-bg-tertiary rounded cursor-pointer hover:bg-bg-hover transition-colors"
+              data-site="central"
+            >
+              <div class="flex items-center justify-between mb-1.5">
+                <div>
+                  <div class="text-xs font-medium">Central Power Station</div>
+                  <div class="text-2xs text-text-tertiary">
+                    Energy • Houston, TX
+                  </div>
+                </div>
+                <div class="text-sm font-semibold text-accent-red">87.5%</div>
+              </div>
+              <div
+                class="h-1 bg-bg-primary rounded-full overflow-hidden mb-1.5"
+              >
+                <div
+                  class="h-full bg-accent-red rounded-full"
+                  style="width: 87.5%"
+                ></div>
+              </div>
+              <div
+                class="flex items-center justify-between text-2xs text-text-tertiary"
+              >
+                <span>89 assets</span>
+                <span class="text-accent-yellow">28 alerts</span>
+                <span class="text-accent-red">5 critical</span>
+              </div>
+            </div>
+            <div
+              onclick="openSitePanel('midwest')"
+              class="site-card p-2 bg-bg-tertiary rounded cursor-pointer hover:bg-bg-hover transition-colors"
+              data-site="midwest"
+            >
+              <div class="flex items-center justify-between mb-1.5">
+                <div>
+                  <div class="text-xs font-medium">Midwest Distribution</div>
+                  <div class="text-2xs text-text-tertiary">
+                    Logistics • Chicago, IL
+                  </div>
+                </div>
+                <div class="text-sm font-semibold stat-up">96.8%</div>
+              </div>
+              <div
+                class="h-1 bg-bg-primary rounded-full overflow-hidden mb-1.5"
+              >
+                <div
+                  class="h-full bg-accent-green rounded-full"
+                  style="width: 96.8%"
+                ></div>
+              </div>
+              <div
+                class="flex items-center justify-between text-2xs text-text-tertiary"
+              >
+                <span>45 assets</span>
+                <span class="text-accent-yellow">5 alerts</span>
+                <span>1 critical</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Site Details Panel -->
+    <div
+      id="site-panel"
+      class="site-panel fixed right-0 top-0 bottom-0 w-96 bg-bg-secondary border-l border-border-primary z-50 flex flex-col"
+    >
+      <div
+        class="h-11 border-b border-border-primary flex items-center justify-between px-4"
+      >
+        <div class="font-medium" id="panel-title">Site Details</div>
+        <button
+          onclick="closeSitePanel()"
+          class="p-1 rounded hover:bg-bg-hover"
+        >
+          <svg
+            class="w-4 h-4 text-text-tertiary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-3 space-y-3" id="panel-content">
+        <!-- Content injected by JS -->
+      </div>
+    </div>
+
+    <!-- Recommendations Drawer -->
+    <div
+      id="recs-overlay"
+      class="fixed inset-0 bg-black/40 z-40 hidden"
+      onclick="toggleRecsDrawer()"
+    ></div>
+    <div
+      id="recs-drawer"
+      class="site-panel fixed right-0 top-0 bottom-0 w-80 bg-bg-secondary border-l border-border-primary z-40 flex flex-col"
+    >
+      <div
+        class="h-11 border-b border-border-primary flex items-center justify-between px-3"
+      >
+        <div class="font-medium text-sm">Recommendations</div>
+        <button
+          onclick="toggleRecsDrawer()"
+          class="p-1 rounded hover:bg-bg-hover"
+        >
+          <svg
+            class="w-4 h-4 text-text-tertiary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-1.5">
+        <div class="p-2 bg-bg-tertiary rounded border-l-2 border-accent-red">
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-red/20 text-accent-red text-2xs font-medium rounded"
+              >CRITICAL</span
+            >
+            <span class="text-2xs text-text-tertiary">REC-1247</span>
+          </div>
+          <div class="text-xs mb-1">
+            Generator GEN-003 coolant system inspection required
+          </div>
+          <div class="text-2xs text-text-tertiary">St. Francis • 2h ago</div>
+        </div>
+        <div class="p-2 bg-bg-tertiary rounded border-l-2 border-accent-yellow">
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-yellow/20 text-accent-yellow text-2xs font-medium rounded"
+              >MONITOR</span
+            >
+            <span class="text-2xs text-text-tertiary">REC-1246</span>
+          </div>
+          <div class="text-xs mb-1">
+            Haul truck HT-089 elevated hydraulic pressure
+          </div>
+          <div class="text-2xs text-text-tertiary">Nevada Mine • 6h ago</div>
+        </div>
+        <div class="p-2 bg-bg-tertiary rounded border-l-2 border-accent-blue">
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-text-tertiary">REC-1245</span>
+          </div>
+          <div class="text-xs mb-1">
+            Turbine TB-012 scheduled maintenance approaching
+          </div>
+          <div class="text-2xs text-text-tertiary">Central Power • 5 days</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      Chart.defaults.color = "#737373";
+      Chart.defaults.borderColor = "#262626";
+      Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+      Chart.defaults.font.size = 10;
+
+      const months = [
+        "J",
+        "F",
+        "M",
+        "A",
+        "M",
+        "J",
+        "J",
+        "A",
+        "S",
+        "O",
+        "N",
+        "D",
+      ];
+      const weeks = [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+      ];
+
+      // Site data
+      const siteData = {
+        "st-francis": {
+          name: "St. Francis Medical",
+          type: "Hospital",
+          location: "San Francisco",
+          availability: 98.7,
+          assets: 24,
+          alerts: 3,
+          critical: 0,
+          atNextService: 8,
+          immediateService: 0,
+          atNextStop: 2,
+          infoRequired: 3,
+          l3: 0,
+          l2: 3,
+          l1: 8,
+          daysToClose: 3.1,
+          daysOperated: 29.2,
+        },
+        nevada: {
+          name: "Nevada Gold Mine",
+          type: "Mining",
+          location: "Elko, NV",
+          availability: 94.2,
+          assets: 156,
+          alerts: 12,
+          critical: 2,
+          atNextService: 24,
+          immediateService: 2,
+          atNextStop: 8,
+          infoRequired: 12,
+          l3: 2,
+          l2: 8,
+          l1: 15,
+          daysToClose: 5.4,
+          daysOperated: 26.8,
+        },
+        central: {
+          name: "Central Power Station",
+          type: "Energy",
+          location: "Houston, TX",
+          availability: 87.5,
+          assets: 89,
+          alerts: 28,
+          critical: 5,
+          atNextService: 15,
+          immediateService: 5,
+          atNextStop: 12,
+          infoRequired: 8,
+          l3: 5,
+          l2: 12,
+          l1: 18,
+          daysToClose: 6.8,
+          daysOperated: 24.1,
+        },
+        midwest: {
+          name: "Midwest Distribution",
+          type: "Logistics",
+          location: "Chicago, IL",
+          availability: 96.8,
+          assets: 45,
+          alerts: 5,
+          critical: 1,
+          atNextService: 10,
+          immediateService: 1,
+          atNextStop: 4,
+          infoRequired: 5,
+          l3: 1,
+          l2: 4,
+          l1: 10,
+          daysToClose: 3.8,
+          daysOperated: 28.0,
+        },
+      };
+
+      // Charts
+      new Chart(document.getElementById("faultsChart"), {
+        type: "line",
+        data: {
+          labels: months,
+          datasets: [
+            {
+              label: "Total",
+              data: [
+                180, 165, 190, 175, 160, 145, 155, 170, 185, 165, 150, 140,
+              ],
+              borderColor: "#00dc82",
+              backgroundColor: "rgba(0,220,130,0.1)",
+              fill: true,
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+            },
+            {
+              label: "Faults",
+              data: [120, 105, 130, 115, 100, 95, 105, 120, 135, 115, 100, 90],
+              borderColor: "#ff5252",
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+            },
+            {
+              label: "Outliers",
+              data: [60, 60, 60, 60, 60, 50, 50, 50, 50, 50, 50, 50],
+              borderColor: "#ffd60a",
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: "#1a1a1a" }, beginAtZero: true },
+          },
+          interaction: { intersect: false, mode: "index" },
+        },
+      });
+
+      new Chart(document.getElementById("mtbfChart"), {
+        type: "line",
+        data: {
+          labels: months,
+          datasets: [
+            {
+              label: "L3",
+              data: [
+                450, 480, 420, 500, 520, 480, 510, 540, 560, 580, 600, 620,
+              ],
+              borderColor: "#ff5252",
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+            },
+            {
+              label: "L2",
+              data: [
+                650, 680, 640, 700, 720, 700, 730, 760, 780, 800, 820, 840,
+              ],
+              borderColor: "#ffd60a",
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+            },
+            {
+              label: "L1",
+              data: [
+                800, 850, 820, 880, 900, 920, 940, 960, 980, 1000, 1020, 1040,
+              ],
+              borderColor: "#3b82f6",
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: "#1a1a1a" } },
+          },
+          interaction: { intersect: false, mode: "index" },
+        },
+      });
+
+      const mtbsCtx = document.getElementById("mtbsChart").getContext("2d");
+      const mtbsGrad = mtbsCtx.createLinearGradient(0, 0, 0, 128);
+      mtbsGrad.addColorStop(0, "rgba(0,220,130,0.2)");
+      mtbsGrad.addColorStop(1, "rgba(0,220,130,0)");
+      new Chart(mtbsCtx, {
+        type: "line",
+        data: {
+          labels: months,
+          datasets: [
+            {
+              data: [
+                1200, 1350, 1280, 1420, 1500, 1480, 1550, 1620, 1680, 1720,
+                1780, 1850,
+              ],
+              borderColor: "#00dc82",
+              backgroundColor: mtbsGrad,
+              fill: true,
+              tension: 0.4,
+              borderWidth: 1.5,
+              pointRadius: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: "#1a1a1a" } },
+          },
+        },
+      });
+
+      new Chart(document.getElementById("mttcChart"), {
+        type: "bar",
+        data: {
+          labels: months,
+          datasets: [
+            {
+              data: [
+                6.2, 5.8, 5.5, 5.2, 4.8, 4.5, 4.3, 4.1, 4.0, 4.2, 4.1, 4.2,
+              ],
+              backgroundColor: "rgba(59,130,246,0.6)",
+              borderRadius: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: "#1a1a1a" } },
+          },
+        },
+      });
+
+      new Chart(document.getElementById("weeklyChart"), {
+        type: "bar",
+        data: {
+          labels: weeks,
+          datasets: [
+            {
+              label: "Open",
+              data: [12, 15, 10, 18, 14, 11, 16, 13, 17, 12, 14, 10],
+              backgroundColor: "rgba(59,130,246,0.7)",
+              borderRadius: 2,
+            },
+            {
+              label: "Closed",
+              data: [10, 14, 12, 16, 15, 13, 18, 15, 19, 14, 16, 12],
+              backgroundColor: "rgba(0,220,130,0.7)",
+              borderRadius: 2,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: "#1a1a1a" } },
+          },
+        },
+      });
+
+      new Chart(document.getElementById("casesChart"), {
+        type: "doughnut",
+        data: {
+          labels: ["Closed", "Open", "Monitor"],
+          datasets: [
+            {
+              data: [156, 89, 47],
+              backgroundColor: ["#00dc82", "#3b82f6", "#ffd60a"],
+              borderWidth: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "65%",
+          plugins: { legend: { display: false } },
+        },
+      });
+
+      // Dropdown functions
+      function toggleDropdown(type) {
+        document.querySelectorAll(".dropdown-menu").forEach((d) => {
+          if (d.id !== type + "-dropdown") d.classList.remove("open");
+        });
+        document.getElementById("date-dropdown").classList.remove("open");
+        document.getElementById(type + "-dropdown").classList.toggle("open");
+      }
+
+      function toggleSite(el, id) {
+        el.classList.toggle("selected");
+        const cb = el.querySelector(".checkbox");
+        if (el.classList.contains("selected")) {
+          cb.classList.add("checked");
+          cb.innerHTML =
+            '<svg class="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+        } else {
+          cb.classList.remove("checked");
+          cb.innerHTML = "";
+        }
+        updateCounts();
+      }
+
+      function toggleModel(el) {
+        el.classList.toggle("selected");
+        const cb = el.querySelector(".checkbox");
+        if (el.classList.contains("selected")) {
+          cb.classList.add("checked");
+          cb.innerHTML =
+            '<svg class="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+        } else {
+          cb.classList.remove("checked");
+          cb.innerHTML = "";
+        }
+        updateCounts();
+      }
+
+      function selectAllSites() {
+        document
+          .querySelectorAll("#sites-dropdown .dropdown-item")
+          .forEach((el) => {
+            el.classList.add("selected");
+            const cb = el.querySelector(".checkbox");
+            cb.classList.add("checked");
+            cb.innerHTML =
+              '<svg class="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+          });
+        updateCounts();
+      }
+
+      function clearAllSites() {
+        document
+          .querySelectorAll("#sites-dropdown .dropdown-item")
+          .forEach((el) => {
+            el.classList.remove("selected");
+            const cb = el.querySelector(".checkbox");
+            cb.classList.remove("checked");
+            cb.innerHTML = "";
+          });
+        updateCounts();
+      }
+
+      function selectAllModels() {
+        document
+          .querySelectorAll("#models-dropdown .dropdown-item")
+          .forEach((el) => {
+            el.classList.add("selected");
+            const cb = el.querySelector(".checkbox");
+            cb.classList.add("checked");
+            cb.innerHTML =
+              '<svg class="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+          });
+        updateCounts();
+      }
+
+      function clearAllModels() {
+        document
+          .querySelectorAll("#models-dropdown .dropdown-item")
+          .forEach((el) => {
+            el.classList.remove("selected");
+            const cb = el.querySelector(".checkbox");
+            cb.classList.remove("checked");
+            cb.innerHTML = "";
+          });
+        updateCounts();
+      }
+
+      function updateCounts() {
+        const sitesCount = document.querySelectorAll(
+          "#sites-dropdown .dropdown-item.selected"
+        ).length;
+        const modelsCount = document.querySelectorAll(
+          "#models-dropdown .dropdown-item.selected"
+        ).length;
+        document.getElementById("sites-selected").textContent = sitesCount;
+        document.getElementById("models-selected").textContent = modelsCount;
+        document.getElementById("sites-count").textContent =
+          sitesCount + " Sites";
+        document.getElementById("models-count").textContent =
+          modelsCount + " Models";
+        const assets = sitesCount * modelsCount * 12;
+        document.getElementById("assets-count").textContent =
+          assets + " Assets";
+      }
+
+      // Date Picker
+      let startDate = { month: 0, year: 2024, day: 1 };
+      let endDate = { month: 11, year: 2024, day: 31 };
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+
+      function toggleDatePicker() {
+        document
+          .querySelectorAll(".dropdown-menu")
+          .forEach((d) => d.classList.remove("open"));
+        document.getElementById("date-dropdown").classList.toggle("open");
+        renderCalendars();
+      }
+
+      function changeMonth(delta, type) {
+        if (type === "start") {
+          startDate.month += delta;
+          if (startDate.month > 11) {
+            startDate.month = 0;
+            startDate.year++;
+          }
+          if (startDate.month < 0) {
+            startDate.month = 11;
+            startDate.year--;
+          }
+        } else {
+          endDate.month += delta;
+          if (endDate.month > 11) {
+            endDate.month = 0;
+            endDate.year++;
+          }
+          if (endDate.month < 0) {
+            endDate.month = 11;
+            endDate.year--;
+          }
+        }
+        renderCalendars();
+      }
+
+      function renderCalendars() {
+        document.getElementById("start-month").textContent =
+          monthNames[startDate.month] + " " + startDate.year;
+        document.getElementById("end-month").textContent =
+          monthNames[endDate.month] + " " + endDate.year;
+        renderCalendar("start-calendar", startDate, "start");
+        renderCalendar("end-calendar", endDate, "end");
+      }
+
+      function renderCalendar(id, dateObj, type) {
+        const container = document.getElementById(id);
+        container.innerHTML = "";
+        const firstDay = new Date(dateObj.year, dateObj.month, 1).getDay();
+        const daysInMonth = new Date(
+          dateObj.year,
+          dateObj.month + 1,
+          0
+        ).getDate();
+        const prevDays = new Date(dateObj.year, dateObj.month, 0).getDate();
+
+        for (let i = firstDay - 1; i >= 0; i--) {
+          const d = document.createElement("div");
+          d.className = "calendar-day other-month";
+          d.textContent = prevDays - i;
+          container.appendChild(d);
+        }
+        for (let i = 1; i <= daysInMonth; i++) {
+          const d = document.createElement("div");
+          d.className = "calendar-day";
+          d.textContent = i;
+          if (
+            type === "start" &&
+            i === startDate.day &&
+            dateObj.month === startDate.month
+          )
+            d.classList.add("selected");
+          if (
+            type === "end" &&
+            i === endDate.day &&
+            dateObj.month === endDate.month
+          )
+            d.classList.add("selected");
+          d.onclick = () => selectDay(i, type);
+          container.appendChild(d);
+        }
+        const remaining = 42 - container.children.length;
+        for (let i = 1; i <= remaining; i++) {
+          const d = document.createElement("div");
+          d.className = "calendar-day other-month";
+          d.textContent = i;
+          container.appendChild(d);
+        }
+      }
+
+      function selectDay(day, type) {
+        if (type === "start") startDate.day = day;
+        else endDate.day = day;
+        renderCalendars();
+      }
+
+      function setPreset(preset) {
+        if (preset === "ytd") {
+          startDate = { month: 0, year: 2024, day: 1 };
+          endDate = { month: 11, year: 2024, day: 31 };
+        }
+        if (preset === "q4") {
+          startDate = { month: 9, year: 2024, day: 1 };
+          endDate = { month: 11, year: 2024, day: 31 };
+        }
+        if (preset === "q3") {
+          startDate = { month: 6, year: 2024, day: 1 };
+          endDate = { month: 8, year: 2024, day: 30 };
+        }
+        if (preset === "30d") {
+          startDate = { month: 11, year: 2024, day: 1 };
+          endDate = { month: 11, year: 2024, day: 31 };
+        }
+        renderCalendars();
+      }
+
+      function applyDateRange() {
+        const s = monthNames[startDate.month].slice(0, 3) + " " + startDate.day;
+        const e =
+          monthNames[endDate.month].slice(0, 3) +
+          " " +
+          endDate.day +
+          ", " +
+          endDate.year;
+        document.getElementById("date-range").textContent = s + " – " + e;
+        document.getElementById("date-dropdown").classList.remove("open");
+      }
+
+      // Site Panel
+      function openSitePanel(id) {
+        const site = siteData[id];
+        document.getElementById("panel-title").textContent = site.name;
+        const availColor =
+          site.availability >= 95
+            ? "stat-up"
+            : site.availability >= 90
+            ? "text-accent-yellow"
+            : "text-accent-red";
+        document.getElementById("panel-content").innerHTML = `
+                <div class="bg-bg-tertiary rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-2xs text-text-tertiary">${
+                          site.type
+                        } • ${site.location}</div>
+                        <div class="text-lg font-semibold ${availColor}">${
+          site.availability
+        }%</div>
+                    </div>
+                    <div class="h-1.5 bg-bg-primary rounded-full overflow-hidden">
+                        <div class="h-full ${
+                          site.availability >= 95
+                            ? "bg-accent-green"
+                            : site.availability >= 90
+                            ? "bg-accent-yellow"
+                            : "bg-accent-red"
+                        } rounded-full" style="width: ${
+          site.availability
+        }%"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-bg-tertiary rounded-lg p-2"><div class="text-lg font-semibold">${
+                      site.assets
+                    }</div><div class="text-2xs text-text-tertiary">Assets</div></div>
+                    <div class="bg-bg-tertiary rounded-lg p-2"><div class="text-lg font-semibold text-accent-yellow">${
+                      site.alerts
+                    }</div><div class="text-2xs text-text-tertiary">Alerts</div></div>
+                    <div class="bg-bg-tertiary rounded-lg p-2"><div class="text-lg font-semibold text-accent-red">${
+                      site.critical
+                    }</div><div class="text-2xs text-text-tertiary">Critical</div></div>
+                </div>
+                <div class="bg-bg-tertiary rounded-lg p-3">
+                    <div class="text-xs font-medium mb-2 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-accent-blue"></span>Weekly Status KPIs</div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-text-tertiary">At Next Service</span><span>${
+                          site.atNextService
+                        }</span></div>
+                        <div class="flex justify-between text-xs"><span class="text-text-tertiary">Immediate Service</span><span class="text-accent-red">${
+                          site.immediateService
+                        }</span></div>
+                        <div class="flex justify-between text-xs"><span class="text-text-tertiary">At Next Stop</span><span class="text-accent-yellow">${
+                          site.atNextStop
+                        }</span></div>
+                        <div class="flex justify-between text-xs"><span class="text-text-tertiary">Info Required</span><span>${
+                          site.infoRequired
+                        }</span></div>
+                    </div>
+                </div>
+                <div class="bg-bg-tertiary rounded-lg p-3">
+                    <div class="text-xs font-medium mb-2 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-accent-yellow"></span>Event Target KPIs</div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs"><span class="text-text-tertiary">Critical (L3)</span><span class="text-accent-red">${
+                          site.l3
+                        }</span></div>
+                        <div class="flex justify-between text-xs"><span class="text-text-tertiary">Monitor (L2)</span><span class="text-accent-yellow">${
+                          site.l2
+                        }</span></div>
+                        <div class="flex justify-between text-xs"><span class="text-text-tertiary">Inform (L1)</span><span class="text-accent-blue">${
+                          site.l1
+                        }</span></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-bg-tertiary rounded-lg p-3 text-center">
+                        <div class="text-2xs text-text-tertiary mb-1">Days to Close</div>
+                        <div class="text-lg font-semibold text-accent-blue">${
+                          site.daysToClose
+                        }</div>
+                        <div class="text-2xs stat-up">↓18% vs prior</div>
+                    </div>
+                    <div class="bg-bg-tertiary rounded-lg p-3 text-center">
+                        <div class="text-2xs text-text-tertiary mb-1">Days Operated</div>
+                        <div class="text-lg font-semibold text-accent-green">${
+                          site.daysOperated
+                        }</div>
+                        <div class="text-2xs stat-up">↑5% vs prior</div>
+                    </div>
+                </div>
+            `;
+        document.getElementById("site-panel").classList.add("open");
+      }
+
+      function closeSitePanel() {
+        document.getElementById("site-panel").classList.remove("open");
+      }
+
+      function toggleRecsDrawer() {
+        document.getElementById("recs-drawer").classList.toggle("open");
+        document.getElementById("recs-overlay").classList.toggle("hidden");
+      }
+
+      // Close dropdowns on click outside
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".dropdown"))
+          document
+            .querySelectorAll(".dropdown-menu")
+            .forEach((d) => d.classList.remove("open"));
+        if (!e.target.closest(".date-picker"))
+          document.getElementById("date-dropdown").classList.remove("open");
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          closeSitePanel();
+          document.getElementById("recs-drawer").classList.remove("open");
+          document.getElementById("recs-overlay").classList.add("hidden");
+        }
+        // Toggle theme with Ctrl+D or Cmd+D
+        if (e.key === "d" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          document.getElementById("themeToggle").click();
+        }
+      });
+
+      // Theme Management
+      function toggleTheme() {
+        const isDark = document.getElementById("themeToggle").checked;
+        if (isDark) {
+          document.documentElement.classList.add("dark");
+          document.body.classList.remove("light-mode");
+          localStorage.setItem("energysage-theme", "dark");
+          // Update icon visibility
+          document.querySelector(".sun-icon").classList.add("hidden");
+          document.querySelector(".moon-icon").classList.remove("hidden");
+        } else {
+          document.documentElement.classList.remove("dark");
+          document.body.classList.add("light-mode");
+          localStorage.setItem("energysage-theme", "light");
+          // Update icon visibility
+          document.querySelector(".sun-icon").classList.remove("hidden");
+          document.querySelector(".moon-icon").classList.add("hidden");
+        }
+
+        // Update chart colors if charts exist
+        if (typeof Chart !== "undefined") {
+          updateChartColors();
+        }
+      }
+
+      function initTheme() {
+        const savedTheme = localStorage.getItem("energysage-theme");
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches;
+
+        if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add("dark");
+          document.body.classList.remove("light-mode");
+          document.getElementById("themeToggle").checked = true;
+          document.querySelector(".sun-icon").classList.add("hidden");
+          document.querySelector(".moon-icon").classList.remove("hidden");
+        } else {
+          document.documentElement.classList.remove("dark");
+          document.body.classList.add("light-mode");
+          document.getElementById("themeToggle").checked = false;
+          document.querySelector(".sun-icon").classList.remove("hidden");
+          document.querySelector(".moon-icon").classList.add("hidden");
+        }
+      }
+
+      function updateChartColors() {
+        const isDark = document.documentElement.classList.contains("dark");
+        const gridColor = isDark ? "#262626" : "#e2e8f0";
+        const textColor = isDark ? "#737373" : "#475569";
+
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
+
+        // Update all existing charts
+        Chart.helpers.each(Chart.instances, (chart) => {
+          if (chart.options.scales) {
+            if (chart.options.scales.x) {
+              chart.options.scales.x.grid.color = gridColor;
+              chart.options.scales.x.ticks.color = textColor;
+            }
+            if (chart.options.scales.y) {
+              chart.options.scales.y.grid.color = gridColor;
+              chart.options.scales.y.ticks.color = textColor;
+            }
+          }
+          chart.update("none");
+        });
+      }
+
+      // Initialize theme on load
+      initTheme();
+
+      // Live time - handled by shared JS
+      // setInterval handled in app.js
+
+      renderCalendars();
+    </script>
+    <!-- Shared JavaScript -->
+    <script src="./app.js"></script>
+  </body>
+</html>

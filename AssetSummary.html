@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EnergySage.ai | Asset Summary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["IBM Plex Sans", "system-ui", "sans-serif"],
+              mono: ["IBM Plex Mono", "monospace"],
+            },
+            colors: {
+              accent: {
+                green: "#00dc82",
+                red: "#ff5252",
+                yellow: "#f59e0b",
+                blue: "#3b82f6",
+              },
+            },
+            fontSize: { "2xs": "0.65rem" },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        --bg-primary: #0d0d0d;
+        --bg-secondary: #141414;
+        --bg-tertiary: #1a1a1a;
+        --bg-hover: #222;
+        --border-primary: #262626;
+        --border-secondary: #333;
+        --text-primary: #fff;
+        --text-secondary: #a3a3a3;
+        --text-tertiary: #737373;
+        --scrollbar: #333;
+        --shadow: rgba(0, 0, 0, 0.5);
+      }
+
+      .light-mode {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-tertiary: #f1f5f9;
+        --bg-hover: #e2e8f0;
+        --border-primary: #e2e8f0;
+        --border-secondary: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-tertiary: #94a3b8;
+        --scrollbar: #cbd5e1;
+        --shadow: rgba(0, 0, 0, 0.1);
+      }
+      * {
+        scrollbar-width: thin;
+      }
+      *::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      *::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 2px;
+      }
+      .dark *::-webkit-scrollbar-thumb {
+        background: #333;
+      }
+
+      .dark .leaflet-container {
+        background: #141414;
+      }
+      .dark .leaflet-tile {
+        filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+      }
+      .dark .leaflet-control-zoom a {
+        background: #1a1a1a;
+        color: #fff;
+        border-color: #333;
+      }
+      .leaflet-control-attribution {
+        display: none;
+      }
+
+      .cluster-marker {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+      }
+
+      .status-tab {
+        transition: all 0.15s;
+      }
+      .status-tab.active {
+        background: var(--active-bg);
+        color: var(--active-color);
+      }
+      .status-tab:not(.active):hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      .dark .status-tab:not(.active):hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .table-row {
+        transition: background 0.1s;
+      }
+      .table-row:hover {
+        background: #f9fafb;
+      }
+      .dark .table-row:hover {
+        background: #1a1a1a;
+      }
+
+      .map-container {
+        transition: height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
+        overflow: hidden;
+      }
+      .map-container.collapsed {
+        height: 0 !important;
+        opacity: 0;
+        margin-bottom: 0 !important;
+      }
+
+      .collapse-btn svg {
+        transition: transform 0.2s;
+      }
+      .collapse-btn.collapsed svg {
+        transform: rotate(-90deg);
+      }
+
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .live-indicator {
+        background: #f1f5f9;
+      }
+
+      .dark .live-indicator {
+        background: #1a1a1a;
+      }
+
+      .toggle-bg {
+        transition: background 0.2s;
+      }
+      .toggle-dot {
+        transition: transform 0.2s;
+      }
+      input:checked + .toggle-bg {
+        background-color: #00dc82;
+      }
+      input:checked + .toggle-bg .toggle-dot {
+        transform: translateX(14px);
+      }
+      .input-field {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #0f172a;
+      }
+      .input-field::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      .dark .input-field {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-primary);
+        color: var(--text-primary);
+      }
+      .dark .input-field::placeholder {
+        color: var(--text-tertiary);
+      }
+    </style>
+  </head>
+  <body
+    class="font-sans text-sm antialiased bg-gray-50 text-gray-900 dark:bg-[#0a0a0a] dark:text-white"
+  >
+    <!-- Header -->
+    <header
+      class="h-10 border-b bg-white dark:bg-[#111] border-gray-200 dark:border-[#222] flex items-center px-3 sticky top-0 z-50"
+    >
+      <div class="flex items-center gap-3 flex-1">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-5 h-5 rounded bg-accent-green flex items-center justify-center"
+          >
+            <svg
+              class="w-3 h-3 text-black"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <span class="font-semibold text-xs">EnergySage</span>
+        </div>
+        <nav class="flex items-center gap-1 ml-4">
+          <button
+            class="px-3 py-2.5 text-xs font-medium text-text-tertiary hover:text-text-secondary"
+          >
+            <a href="./LandingPage.html">KPI</a>
+          </button>
+          <button
+            class="px-3 py-2.5 text-xs font-medium border-b-2 border-accent-green dark:text-white"
+          >
+            <a href="./AssetSummary.html">Assets Summary</a>
+          </button>
+          <button
+            class="px-3 py-2.5 text-xs font-medium text-text-tertiary hover:text-text-secondary"
+          >
+            <a href="./EquipmentDetails.html">Equipment Details</a>
+          </button>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="relative w-64">
+          <svg
+            class="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-tertiary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search assets, faults..."
+            class="input-field w-full rounded px-2 py-1.5 pl-7 text-xs"
+          />
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            id="themeToggle"
+            class="sr-only peer"
+            onchange="toggleTheme()"
+          />
+          <div
+            class="toggle-bg w-8 h-[18px] bg-gray-300 dark:bg-[#333] rounded-full relative"
+          >
+            <div
+              class="toggle-dot absolute left-0.5 top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow flex items-center justify-center"
+            >
+              <svg
+                class="w-2 h-2 text-gray-500 dark:hidden"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                />
+              </svg>
+              <svg
+                class="w-2 h-2 text-gray-500 hidden dark:block"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+                />
+              </svg>
+            </div>
+          </div>
+        </label>
+        <div class="flex items-center gap-2">
+          <div
+            class="live-indicator dark:live-indicator flex items-center gap-1.5 px-2 py-1 rounded text-2xs"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-accent-green pulse"></span>
+            <span class="text-dynamic-tertiary">Live</span>
+            <span class="text-dynamic-tertiary">•</span>
+            <span class="text-dynamic-secondary font-mono" id="live-time"
+              >10:42:15</span
+            >
+          </div>
+          <button
+            onclick="toggleRecsDrawer()"
+            class="relative p-1.5 rounded hover:bg-bg-hover"
+          >
+            <svg
+              class="w-4 h-4 text-text-secondary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            <span
+              class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-accent-red rounded-full text-2xs flex items-center justify-center font-medium"
+              >7</span
+            >
+          </button>
+          <div
+            class="w-6 h-6 rounded-full bg-accent-blue text-2xs font-medium flex items-center justify-center ml-1"
+          >
+            JD
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Status Filter Bar -->
+    <div
+      class="h-10 border-b bg-white dark:bg-[#0f0f0f] border-gray-200 dark:border-[#222] flex items-center px-3 sticky top-10 z-40"
+    >
+      <div class="flex items-center gap-1 mr-4">
+        <button
+          onclick="setFilter('all')"
+          data-filter="all"
+          class="status-tab active px-2.5 py-1 rounded text-2xs font-medium flex items-center gap-1.5"
+          style="--active-bg: rgba(0, 220, 130, 0.1); --active-color: #00dc82"
+        >
+          <span>All</span>
+          <span class="opacity-70" id="count-all">847</span>
+        </button>
+        <button
+          onclick="setFilter('running')"
+          data-filter="running"
+          class="status-tab px-2.5 py-1 rounded text-2xs font-medium flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+          style="--active-bg: rgba(0, 220, 130, 0.1); --active-color: #00dc82"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>
+          <span>Running</span>
+          <span class="opacity-60" id="count-running">612</span>
+        </button>
+        <button
+          onclick="setFilter('stopped')"
+          data-filter="stopped"
+          class="status-tab px-2.5 py-1 rounded text-2xs font-medium flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+          style="--active-bg: rgba(255, 82, 82, 0.1); --active-color: #ff5252"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-red"></span>
+          <span>Stopped</span>
+          <span class="opacity-60" id="count-stopped">89</span>
+        </button>
+        <button
+          onclick="setFilter('ready')"
+          data-filter="ready"
+          class="status-tab px-2.5 py-1 rounded text-2xs font-medium flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+          style="--active-bg: rgba(59, 130, 246, 0.1); --active-color: #3b82f6"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-blue"></span>
+          <span>Ready</span>
+          <span class="opacity-60" id="count-ready">98</span>
+        </button>
+        <button
+          onclick="setFilter('notready')"
+          data-filter="notready"
+          class="status-tab px-2.5 py-1 rounded text-2xs font-medium flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+          style="--active-bg: rgba(245, 158, 11, 0.1); --active-color: #f59e0b"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-yellow"></span>
+          <span>Not Ready</span>
+          <span class="opacity-60" id="count-notready">48</span>
+        </button>
+      </div>
+      <div class="flex-1"></div>
+      <div class="flex items-center gap-2 text-2xs">
+        <!-- Sites Dropdown -->
+        <div class="dropdown relative">
+          <button
+            onclick="toggleSitesDropdown()"
+            class="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-[#222] text-gray-600 dark:text-gray-400"
+          >
+            <span>Sites</span>
+            <span id="sites-selected" class="text-accent-green">3</span>
+            <svg
+              class="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          <div
+            id="sites-dropdown"
+            class="dropdown-menu hidden absolute top-full left-0 mt-1 min-w-[180px] bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] rounded-lg shadow-lg z-50"
+          >
+            <div class="p-2 border-b border-gray-200 dark:border-[#333]">
+              <button
+                onclick="selectAllSites()"
+                class="text-2xs text-accent-green hover:underline"
+              >
+                Select All
+              </button>
+              <span class="text-gray-400 mx-1">|</span>
+              <button
+                onclick="clearAllSites()"
+                class="text-2xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                Clear
+              </button>
+            </div>
+            <div
+              class="dropdown-item selected flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#222]"
+              onclick="toggleSiteItem(this, 'st-francis')"
+            >
+              <div
+                class="checkbox checked w-3.5 h-3.5 border border-gray-300 dark:border-[#444] rounded flex items-center justify-center bg-accent-green"
+              >
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span class="text-xs">St. Francis Medical</span>
+            </div>
+            <div
+              class="dropdown-item selected flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#222]"
+              onclick="toggleSiteItem(this, 'nevada')"
+            >
+              <div
+                class="checkbox checked w-3.5 h-3.5 border border-gray-300 dark:border-[#444] rounded flex items-center justify-center bg-accent-green"
+              >
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span class="text-xs">Nevada Gold Mine</span>
+            </div>
+            <div
+              class="dropdown-item selected flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#222]"
+              onclick="toggleSiteItem(this, 'central')"
+            >
+              <div
+                class="checkbox checked w-3.5 h-3.5 border border-gray-300 dark:border-[#444] rounded flex items-center justify-center bg-accent-green"
+              >
+                <svg
+                  class="w-2.5 h-2.5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <span class="text-xs">Central Power Station</span>
+            </div>
+            <div
+              class="dropdown-item flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#222]"
+              onclick="toggleSiteItem(this, 'london')"
+            >
+              <div
+                class="checkbox w-3.5 h-3.5 border border-gray-300 dark:border-[#444] rounded flex items-center justify-center"
+              ></div>
+              <span class="text-xs">London DC</span>
+            </div>
+            <div
+              class="dropdown-item flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#222]"
+              onclick="toggleSiteItem(this, 'paris')"
+            >
+              <div
+                class="checkbox w-3.5 h-3.5 border border-gray-300 dark:border-[#444] rounded flex items-center justify-center"
+              ></div>
+              <span class="text-xs">Paris Hub</span>
+            </div>
+          </div>
+        </div>
+        <div class="w-px h-4 bg-gray-200 dark:bg-[#333]"></div>
+        <button
+          class="flex items-center gap-1 px-2 py-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+        >
+          <svg
+            class="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+            />
+          </svg>
+          Export
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div
+      class="border-b bg-white dark:bg-[#111] border-gray-200 dark:border-[#222] px-3 py-2"
+    >
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-8 h-8 rounded-lg bg-accent-green/10 flex items-center justify-center"
+          >
+            <svg
+              class="w-4 h-4 text-accent-green"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xs text-gray-500 dark:text-gray-400">
+              Total Assets
+            </div>
+            <div class="text-base font-semibold leading-tight" id="stat-total">
+              847
+            </div>
+          </div>
+        </div>
+        <div class="w-px h-8 bg-gray-200 dark:bg-[#333]"></div>
+        <div class="flex items-center gap-2">
+          <div
+            class="w-8 h-8 rounded-lg bg-accent-blue/10 flex items-center justify-center"
+          >
+            <svg
+              class="w-4 h-4 text-accent-blue"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xs text-gray-500 dark:text-gray-400">
+              Engine Hours
+            </div>
+            <div class="text-base font-semibold leading-tight" id="stat-hours">
+              1.24M
+            </div>
+          </div>
+        </div>
+        <div class="w-px h-8 bg-gray-200 dark:bg-[#333]"></div>
+        <div class="flex items-center gap-2">
+          <div
+            class="w-8 h-8 rounded-lg bg-accent-yellow/10 flex items-center justify-center"
+          >
+            <svg
+              class="w-4 h-4 text-accent-yellow"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"
+              />
+            </svg>
+          </div>
+          <div>
+            <div class="text-2xs text-gray-500 dark:text-gray-400">
+              Fuel Consumed
+            </div>
+            <div class="text-base font-semibold leading-tight" id="stat-fuel">
+              847K L
+            </div>
+          </div>
+        </div>
+        <div class="w-px h-8 bg-gray-200 dark:bg-[#333]"></div>
+        <div class="flex items-center gap-4">
+          <div class="text-center">
+            <div
+              class="text-base font-semibold text-accent-red leading-tight"
+              id="stat-faults-high"
+            >
+              12
+            </div>
+            <div class="text-2xs text-gray-500">High</div>
+          </div>
+          <div class="text-center">
+            <div
+              class="text-base font-semibold text-accent-yellow leading-tight"
+              id="stat-faults-med"
+            >
+              34
+            </div>
+            <div class="text-2xs text-gray-500">Medium</div>
+          </div>
+          <div class="text-center">
+            <div
+              class="text-base font-semibold text-accent-blue leading-tight"
+              id="stat-faults-low"
+            >
+              89
+            </div>
+            <div class="text-2xs text-gray-500">Low</div>
+          </div>
+        </div>
+        <div class="flex-1"></div>
+        <div class="flex items-center gap-1.5 text-2xs">
+          <span class="text-accent-green">●</span>
+          <span id="stat-healthy">799 healthy</span>
+          <span class="text-gray-400 mx-1">•</span>
+          <span class="text-accent-red">●</span>
+          <span id="stat-faulty">48 faulty</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="p-2">
+      <!-- Collapsible Map -->
+      <div class="mb-2">
+        <button
+          onclick="toggleMap()"
+          class="collapse-btn flex items-center gap-1.5 text-2xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-1.5"
+        >
+          <svg
+            class="w-3 h-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+          <span id="map-toggle-text">Hide Map</span>
+        </button>
+        <div
+          id="mapContainer"
+          class="map-container bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#222] rounded-lg overflow-hidden relative"
+          style="height: 200px"
+        >
+          <div class="absolute top-2 left-2 z-[1000] flex items-center gap-1.5">
+            <span
+              class="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur border border-gray-200 dark:border-[#333] rounded px-2 py-0.5 text-2xs font-medium shadow-sm"
+              id="map-filter-label"
+              >All locations</span
+            >
+          </div>
+          <div class="absolute top-2 right-2 z-[1000] flex items-center gap-1">
+            <button
+              onclick="setMapView('world')"
+              class="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur border border-gray-200 dark:border-[#333] rounded px-1.5 py-0.5 text-2xs hover:bg-gray-50 dark:hover:bg-[#262626]"
+            >
+              World
+            </button>
+            <button
+              onclick="setMapView('usa')"
+              class="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur border border-gray-200 dark:border-[#333] rounded px-1.5 py-0.5 text-2xs hover:bg-gray-50 dark:hover:bg-[#262626]"
+            >
+              USA
+            </button>
+            <button
+              onclick="setMapView('europe')"
+              class="bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur border border-gray-200 dark:border-[#333] rounded px-1.5 py-0.5 text-2xs hover:bg-gray-50 dark:hover:bg-[#262626]"
+            >
+              EU
+            </button>
+          </div>
+          <div id="map" class="w-full h-full"></div>
+        </div>
+      </div>
+
+      <!-- Asset Table -->
+      <div
+        class="bg-white dark:bg-[#141414] border border-gray-200 dark:border-[#222] rounded-lg overflow-hidden"
+      >
+        <div
+          class="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-[#222]"
+        >
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-medium">Assets</span>
+            <span class="text-2xs text-gray-400" id="table-count"
+              >847 items</span
+            >
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <svg
+                class="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                id="tableSearch"
+                placeholder="Filter..."
+                class="bg-gray-50 dark:bg-[#1a1a1a] border-0 rounded px-2 py-1 pl-6 text-2xs w-32 focus:outline-none focus:ring-1 focus:ring-accent-green"
+                oninput="filterTable()"
+              />
+            </div>
+            <select
+              id="groupBy"
+              class="bg-gray-50 dark:bg-[#1a1a1a] border-0 rounded px-2 py-1 text-2xs focus:outline-none cursor-pointer"
+              onchange="renderTable()"
+            >
+              <option value="none">No grouping</option>
+              <option value="site">Group by Site</option>
+              <option value="status">Group by Status</option>
+              <option value="make">Group by Make</option>
+            </select>
+            <button
+              class="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
+              title="Columns"
+            >
+              <svg
+                class="w-3.5 h-3.5 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-auto" id="tableWrapper">
+          <table class="w-full text-xs" id="assetTable">
+            <thead
+              class="sticky top-0 bg-gray-50 dark:bg-[#111] text-left z-10"
+            >
+              <tr class="border-b border-gray-100 dark:border-[#222]">
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400 w-10"
+                >
+                  #
+                </th>
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Equipment ID
+                </th>
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Site
+                </th>
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Connect ID
+                </th>
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400 w-16"
+                >
+                  Faults
+                </th>
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400 w-24"
+                >
+                  Status
+                </th>
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Make
+                </th>
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400"
+                >
+                  Model
+                </th>
+                <th
+                  class="px-3 py-2 font-medium text-gray-500 dark:text-gray-400 w-20 text-right"
+                >
+                  Hours
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="tableBody"
+              class="divide-y divide-gray-50 dark:divide-[#1a1a1a]"
+            ></tbody>
+          </table>
+        </div>
+
+        <div
+          class="flex items-center justify-between px-3 py-2 border-t border-gray-100 dark:border-[#222] text-2xs text-gray-500"
+        >
+          <span id="pagination-info">Showing 1-20 of 847</span>
+          <div class="flex items-center gap-1">
+            <button
+              class="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
+            >
+              ←
+            </button>
+            <button
+              class="px-2 py-1 rounded bg-accent-green/10 text-accent-green font-medium"
+            >
+              1
+            </button>
+            <button
+              class="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
+            >
+              2
+            </button>
+            <button
+              class="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
+            >
+              3
+            </button>
+            <span class="px-1">...</span>
+            <button
+              class="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
+            >
+              43
+            </button>
+            <button
+              class="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
+            >
+              →
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Recommendations Drawer -->
+    <div
+      id="recs-overlay"
+      class="fixed inset-0 bg-black/40 z-40 hidden"
+      onclick="toggleRecsDrawer()"
+    ></div>
+    <div
+      id="recs-drawer"
+      class="fixed right-0 top-0 bottom-0 w-80 bg-white dark:bg-[#111] border-l border-gray-200 dark:border-[#222] z-[2000] flex flex-col transform translate-x-full transition-transform duration-300"
+    >
+      <div
+        class="h-10 border-b border-gray-200 dark:border-[#222] flex items-center justify-between px-3"
+      >
+        <div class="font-medium text-sm">Recommendations</div>
+        <button
+          onclick="toggleRecsDrawer()"
+          class="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#222]"
+        >
+          <svg
+            class="w-4 h-4 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-2 space-y-1.5">
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-red"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-red/20 text-accent-red text-2xs font-medium rounded"
+              >CRITICAL</span
+            >
+            <span class="text-2xs text-gray-400">REC-1247</span>
+          </div>
+          <div class="text-xs mb-1">
+            Generator GEN-003 coolant system inspection required
+          </div>
+          <div class="text-2xs text-gray-400">St. Francis • 2h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-yellow"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-yellow/20 text-accent-yellow text-2xs font-medium rounded"
+              >MONITOR</span
+            >
+            <span class="text-2xs text-gray-400">REC-1246</span>
+          </div>
+          <div class="text-xs mb-1">
+            Haul truck HT-089 elevated hydraulic pressure
+          </div>
+          <div class="text-2xs text-gray-400">Nevada Mine • 6h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1245</span>
+          </div>
+          <div class="text-xs mb-1">
+            Turbine TB-012 scheduled maintenance approaching
+          </div>
+          <div class="text-2xs text-gray-400">Central Power • 5 days</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-yellow"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-yellow/20 text-accent-yellow text-2xs font-medium rounded"
+              >MONITOR</span
+            >
+            <span class="text-2xs text-gray-400">REC-1244</span>
+          </div>
+          <div class="text-xs mb-1">
+            Excavator EX-156 engine oil analysis abnormal
+          </div>
+          <div class="text-2xs text-gray-400">Nevada Mine • 12h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1243</span>
+          </div>
+          <div class="text-xs mb-1">
+            HVAC unit AC-024 filter replacement due
+          </div>
+          <div class="text-2xs text-gray-400">St. Francis • 1 day</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-red"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-red/20 text-accent-red text-2xs font-medium rounded"
+              >CRITICAL</span
+            >
+            <span class="text-2xs text-gray-400">REC-1242</span>
+          </div>
+          <div class="text-xs mb-1">
+            Compressor CP-078 bearing temperature elevated
+          </div>
+          <div class="text-2xs text-gray-400">Central Power • 4h ago</div>
+        </div>
+        <div
+          class="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded border-l-2 border-accent-blue"
+        >
+          <div class="flex items-center gap-1.5 mb-1">
+            <span
+              class="px-1 py-0.5 bg-accent-blue/20 text-accent-blue text-2xs font-medium rounded"
+              >INFORM</span
+            >
+            <span class="text-2xs text-gray-400">REC-1241</span>
+          </div>
+          <div class="text-xs mb-1">
+            Loader LD-089 tire pressure monitoring alert
+          </div>
+          <div class="text-2xs text-gray-400">Nevada Mine • 2 days</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Asset Data
+      const allAssets = [
+        {
+          id: 1,
+          equipId: "EQ-001247",
+          site: "St. Francis Medical",
+          connectId: "CA-SF-0012",
+          faults: 3,
+          status: "running",
+          make: "Caterpillar",
+          model: "C18 ACERT",
+          hours: 12847,
+        },
+        {
+          id: 2,
+          equipId: "EQ-001248",
+          site: "St. Francis Medical",
+          connectId: "CA-SF-0013",
+          faults: 0,
+          status: "running",
+          make: "Caterpillar",
+          model: "3516B",
+          hours: 8234,
+        },
+        {
+          id: 3,
+          equipId: "EQ-001249",
+          site: "St. Francis Medical",
+          connectId: "CA-SF-0014",
+          faults: 0,
+          status: "ready",
+          make: "Cummins",
+          model: "QSK60",
+          hours: 6123,
+        },
+        {
+          id: 4,
+          equipId: "EQ-001250",
+          site: "St. Francis Medical",
+          connectId: "CA-SF-0015",
+          faults: 1,
+          status: "stopped",
+          make: "Cummins",
+          model: "QSK78",
+          hours: 9876,
+        },
+        {
+          id: 5,
+          equipId: "EQ-001251",
+          site: "St. Francis Medical",
+          connectId: "CA-SF-0016",
+          faults: 0,
+          status: "running",
+          make: "MTU",
+          model: "16V4000",
+          hours: 7654,
+        },
+        {
+          id: 6,
+          equipId: "EQ-002156",
+          site: "Nevada Gold Mine",
+          connectId: "NV-EL-0089",
+          faults: 1,
+          status: "stopped",
+          make: "Komatsu",
+          model: "HD785-7",
+          hours: 24156,
+        },
+        {
+          id: 7,
+          equipId: "EQ-002157",
+          site: "Nevada Gold Mine",
+          connectId: "NV-EL-0090",
+          faults: 0,
+          status: "running",
+          make: "Komatsu",
+          model: "PC8000-6",
+          hours: 18923,
+        },
+        {
+          id: 8,
+          equipId: "EQ-002158",
+          site: "Nevada Gold Mine",
+          connectId: "NV-EL-0091",
+          faults: 5,
+          status: "notready",
+          make: "Caterpillar",
+          model: "797F",
+          hours: 31456,
+        },
+        {
+          id: 9,
+          equipId: "EQ-002159",
+          site: "Nevada Gold Mine",
+          connectId: "NV-EL-0092",
+          faults: 0,
+          status: "running",
+          make: "Liebherr",
+          model: "T 284",
+          hours: 15789,
+        },
+        {
+          id: 10,
+          equipId: "EQ-002160",
+          site: "Nevada Gold Mine",
+          connectId: "NV-EL-0093",
+          faults: 2,
+          status: "running",
+          make: "Caterpillar",
+          model: "994K",
+          hours: 22341,
+        },
+        {
+          id: 11,
+          equipId: "EQ-002161",
+          site: "Nevada Gold Mine",
+          connectId: "NV-EL-0094",
+          faults: 0,
+          status: "ready",
+          make: "Komatsu",
+          model: "WA1200",
+          hours: 19234,
+        },
+        {
+          id: 12,
+          equipId: "EQ-002162",
+          site: "Nevada Gold Mine",
+          connectId: "NV-EL-0095",
+          faults: 0,
+          status: "running",
+          make: "Hitachi",
+          model: "EH5000",
+          hours: 28765,
+        },
+        {
+          id: 13,
+          equipId: "EQ-002163",
+          site: "Nevada Gold Mine",
+          connectId: "NV-EL-0096",
+          faults: 3,
+          status: "notready",
+          make: "Caterpillar",
+          model: "793F",
+          hours: 35678,
+        },
+        {
+          id: 14,
+          equipId: "EQ-003089",
+          site: "Central Power Station",
+          connectId: "TX-HO-0156",
+          faults: 0,
+          status: "running",
+          make: "Siemens",
+          model: "SGT-800",
+          hours: 45678,
+        },
+        {
+          id: 15,
+          equipId: "EQ-003090",
+          site: "Central Power Station",
+          connectId: "TX-HO-0157",
+          faults: 2,
+          status: "ready",
+          make: "GE",
+          model: "LM6000",
+          hours: 38234,
+        },
+        {
+          id: 16,
+          equipId: "EQ-003091",
+          site: "Central Power Station",
+          connectId: "TX-HO-0158",
+          faults: 0,
+          status: "running",
+          make: "Siemens",
+          model: "SGT-400",
+          hours: 52891,
+        },
+        {
+          id: 17,
+          equipId: "EQ-003092",
+          site: "Central Power Station",
+          connectId: "TX-HO-0159",
+          faults: 4,
+          status: "stopped",
+          make: "GE",
+          model: "7F.05",
+          hours: 61234,
+        },
+        {
+          id: 18,
+          equipId: "EQ-003093",
+          site: "Central Power Station",
+          connectId: "TX-HO-0160",
+          faults: 0,
+          status: "running",
+          make: "Mitsubishi",
+          model: "M501J",
+          hours: 48765,
+        },
+        {
+          id: 19,
+          equipId: "EQ-003094",
+          site: "Central Power Station",
+          connectId: "TX-HO-0161",
+          faults: 1,
+          status: "notready",
+          make: "Siemens",
+          model: "SGT5-8000H",
+          hours: 55432,
+        },
+        {
+          id: 20,
+          equipId: "EQ-003095",
+          site: "Central Power Station",
+          connectId: "TX-HO-0162",
+          faults: 0,
+          status: "running",
+          make: "GE",
+          model: "HA.02",
+          hours: 42567,
+        },
+      ];
+
+      const statsByFilter = {
+        all: {
+          total: 847,
+          healthy: 799,
+          faulty: 48,
+          hours: "1.24M",
+          fuel: "847K L",
+          faultsHigh: 12,
+          faultsMed: 34,
+          faultsLow: 89,
+        },
+        running: {
+          total: 612,
+          healthy: 598,
+          faulty: 14,
+          hours: "892K",
+          fuel: "612K L",
+          faultsHigh: 4,
+          faultsMed: 18,
+          faultsLow: 52,
+        },
+        stopped: {
+          total: 89,
+          healthy: 67,
+          faulty: 22,
+          hours: "156K",
+          fuel: "89K L",
+          faultsHigh: 6,
+          faultsMed: 12,
+          faultsLow: 18,
+        },
+        ready: {
+          total: 98,
+          healthy: 92,
+          faulty: 6,
+          hours: "134K",
+          fuel: "98K L",
+          faultsHigh: 1,
+          faultsMed: 3,
+          faultsLow: 12,
+        },
+        notready: {
+          total: 48,
+          healthy: 42,
+          faulty: 6,
+          hours: "58K",
+          fuel: "48K L",
+          faultsHigh: 1,
+          faultsMed: 1,
+          faultsLow: 7,
+        },
+      };
+
+      let currentFilter = "all";
+      let mapExpanded = true;
+      let map;
+      let markers = [];
+
+      // Theme
+      function toggleTheme() {
+        document.documentElement.classList.toggle("dark");
+        localStorage.setItem(
+          "theme",
+          document.documentElement.classList.contains("dark") ? "dark" : "light"
+        );
+        updateMapMarkers();
+      }
+
+      if (
+        localStorage.getItem("theme") === "dark" ||
+        (!localStorage.getItem("theme") &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("dark");
+        document.getElementById("themeToggle").checked = true;
+      }
+
+      // Map toggle
+      function toggleMap() {
+        mapExpanded = !mapExpanded;
+        const container = document.getElementById("mapContainer");
+        const btn = document.querySelector(".collapse-btn");
+        const text = document.getElementById("map-toggle-text");
+
+        container.classList.toggle("collapsed", !mapExpanded);
+        btn.classList.toggle("collapsed", !mapExpanded);
+        text.textContent = mapExpanded ? "Hide Map" : "Show Map";
+
+        if (mapExpanded && map) {
+          setTimeout(() => map.invalidateSize(), 310);
+        }
+        updateTableHeight();
+      }
+
+      function updateTableHeight() {
+        const wrapper = document.getElementById("tableWrapper");
+        const mapHeight = mapExpanded ? 240 : 40;
+        wrapper.style.maxHeight = `calc(100vh - ${mapHeight + 220}px)`;
+      }
+
+      // Filter
+      function setFilter(filter) {
+        currentFilter = filter;
+
+        document.querySelectorAll(".status-tab").forEach((tab) => {
+          tab.classList.remove("active");
+          if (tab.dataset.filter === filter) tab.classList.add("active");
+        });
+
+        const stats = statsByFilter[filter];
+        document.getElementById("stat-total").textContent = stats.total;
+        document.getElementById("stat-hours").textContent = stats.hours;
+        document.getElementById("stat-fuel").textContent = stats.fuel;
+        document.getElementById("stat-faults-high").textContent =
+          stats.faultsHigh;
+        document.getElementById("stat-faults-med").textContent =
+          stats.faultsMed;
+        document.getElementById("stat-faults-low").textContent =
+          stats.faultsLow;
+        document.getElementById("stat-healthy").textContent =
+          stats.healthy + " healthy";
+        document.getElementById("stat-faulty").textContent =
+          stats.faulty + " faulty";
+
+        const labels = {
+          all: "All locations",
+          running: "Running assets",
+          stopped: "Stopped assets",
+          ready: "Ready assets",
+          notready: "Not ready",
+        };
+        document.getElementById("map-filter-label").textContent =
+          labels[filter];
+
+        renderTable();
+        updateMapMarkers();
+      }
+
+      // Table
+      const statusConfig = {
+        running: { color: "bg-accent-green", label: "Running" },
+        stopped: { color: "bg-accent-red", label: "Stopped" },
+        ready: { color: "bg-accent-blue", label: "Ready" },
+        notready: { color: "bg-accent-yellow", label: "Not Ready" },
+      };
+
+      function renderTable() {
+        const tbody = document.getElementById("tableBody");
+        let filtered =
+          currentFilter === "all"
+            ? [...allAssets]
+            : allAssets.filter((a) => a.status === currentFilter);
+
+        const searchTerm = document
+          .getElementById("tableSearch")
+          .value.toLowerCase();
+        if (searchTerm) {
+          filtered = filtered.filter(
+            (a) =>
+              a.equipId.toLowerCase().includes(searchTerm) ||
+              a.site.toLowerCase().includes(searchTerm) ||
+              a.make.toLowerCase().includes(searchTerm) ||
+              a.model.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        const groupBy = document.getElementById("groupBy").value;
+
+        if (groupBy !== "none") {
+          const groups = {};
+          filtered.forEach((a) => {
+            const key = a[groupBy];
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(a);
+          });
+
+          let html = "";
+          let idx = 1;
+          Object.keys(groups)
+            .sort()
+            .forEach((group) => {
+              const groupLabel =
+                groupBy === "status"
+                  ? statusConfig[group]?.label || group
+                  : group;
+              html += `<tr class="bg-gray-100 dark:bg-[#1a1a1a]"><td colspan="9" class="px-3 py-1.5 text-2xs font-semibold text-gray-600 dark:text-gray-300">${groupLabel} <span class="font-normal text-gray-400">(${groups[group].length})</span></td></tr>`;
+              groups[group].forEach((asset) => {
+                html += renderRow(asset, idx++);
+              });
+            });
+          tbody.innerHTML = html;
+        } else {
+          tbody.innerHTML = filtered
+            .map((asset, i) => renderRow(asset, i + 1))
+            .join("");
+        }
+
+        document.getElementById(
+          "table-count"
+        ).textContent = `${filtered.length} items`;
+        document.getElementById(
+          "pagination-info"
+        ).textContent = `Showing 1-${Math.min(20, filtered.length)} of ${
+          filtered.length
+        }`;
+      }
+
+      function renderRow(asset, idx) {
+        const sc = statusConfig[asset.status];
+        const faultClass =
+          asset.faults > 2
+            ? "bg-accent-red/10 text-accent-red"
+            : asset.faults > 0
+            ? "bg-accent-yellow/10 text-accent-yellow"
+            : "bg-gray-100 dark:bg-[#222] text-gray-400";
+        return `
+                <tr class="table-row">
+                    <td class="px-3 py-1.5 text-gray-400 text-2xs">${idx}</td>
+                    <td class="px-3 py-1.5"><a href="#" class="text-accent-blue hover:underline font-mono text-2xs">${
+                      asset.equipId
+                    }</a></td>
+                    <td class="px-3 py-1.5 text-2xs">${asset.site}</td>
+                    <td class="px-3 py-1.5"><a href="#" class="text-accent-blue hover:underline font-mono text-2xs">${
+                      asset.connectId
+                    }</a></td>
+                    <td class="px-3 py-1.5"><span class="px-1.5 py-0.5 ${faultClass} rounded text-2xs font-medium">${
+          asset.faults
+        }</span></td>
+                    <td class="px-3 py-1.5"><span class="inline-flex items-center gap-1 text-2xs"><span class="w-1.5 h-1.5 rounded-full ${
+                      sc.color
+                    }"></span>${sc.label}</span></td>
+                    <td class="px-3 py-1.5 text-2xs">${asset.make}</td>
+                    <td class="px-3 py-1.5 text-2xs">${asset.model}</td>
+                    <td class="px-3 py-1.5 text-right font-mono text-2xs">${asset.hours.toLocaleString()}</td>
+                </tr>
+            `;
+      }
+
+      function filterTable() {
+        renderTable();
+      }
+
+      // Map
+      const locations = [
+        {
+          lat: 37.7749,
+          lng: -122.4194,
+          name: "St. Francis Medical",
+          assets: { all: 24, running: 18, stopped: 2, ready: 3, notready: 1 },
+        },
+        {
+          lat: 40.8324,
+          lng: -115.7631,
+          name: "Nevada Gold Mine",
+          assets: {
+            all: 156,
+            running: 112,
+            stopped: 18,
+            ready: 14,
+            notready: 12,
+          },
+        },
+        {
+          lat: 29.7604,
+          lng: -95.3698,
+          name: "Central Power Station",
+          assets: { all: 89, running: 62, stopped: 12, ready: 8, notready: 7 },
+        },
+        {
+          lat: 51.5074,
+          lng: -0.1278,
+          name: "London DC",
+          assets: { all: 45, running: 38, stopped: 3, ready: 2, notready: 2 },
+        },
+        {
+          lat: 48.8566,
+          lng: 2.3522,
+          name: "Paris Hub",
+          assets: { all: 38, running: 32, stopped: 2, ready: 3, notready: 1 },
+        },
+      ];
+
+      function initMap() {
+        map = L.map("map", {
+          zoomControl: false,
+          attributionControl: false,
+        }).setView([35, -20], 2);
+        L.control.zoom({ position: "bottomright" }).addTo(map);
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+          { maxZoom: 18 }
+        ).addTo(map);
+        updateMapMarkers();
+      }
+
+      function updateMapMarkers() {
+        markers.forEach((m) => map.removeLayer(m));
+        markers = [];
+
+        const isDark = document.documentElement.classList.contains("dark");
+        const statusColors = {
+          all: "#00dc82",
+          running: "#00dc82",
+          stopped: "#ff5252",
+          ready: "#3b82f6",
+          notready: "#f59e0b",
+        };
+
+        locations.forEach((loc) => {
+          const count = loc.assets[currentFilter] || 0;
+          if (count === 0) return;
+
+          const size = Math.max(24, Math.min(40, count / 5 + 20));
+          const color = statusColors[currentFilter];
+          const bg = isDark ? "#1a1a1a" : "#ffffff";
+
+          const icon = L.divIcon({
+            className: "custom-marker",
+            html: `<div class="cluster-marker" style="width:${size}px;height:${size}px;background:${bg};border:2px solid ${color};color:${
+              isDark ? "#fff" : "#000"
+            };">${count}</div>`,
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
+          });
+
+          const marker = L.marker([loc.lat, loc.lng], { icon }).addTo(map);
+          marker.bindPopup(
+            `<div style="font-family:'IBM Plex Sans';font-size:11px;"><b>${loc.name}</b><br>${count} assets</div>`
+          );
+          markers.push(marker);
+        });
+      }
+
+      function setMapView(view) {
+        if (view === "world") map.setView([35, -20], 2);
+        else if (view === "usa") map.setView([39.8283, -98.5795], 4);
+        else if (view === "europe") map.setView([50.1109, 9.6821], 4);
+      }
+
+      // Init
+      document.addEventListener("DOMContentLoaded", () => {
+        initMap();
+        renderTable();
+        updateTableHeight();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "d" && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          document.getElementById("themeToggle").checked =
+            !document.getElementById("themeToggle").checked;
+          toggleTheme();
+        }
+        if (e.key === "m" && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          toggleMap();
+        }
+        if (e.key === "Escape") {
+          document.getElementById("recs-drawer").classList.remove("open");
+          document.getElementById("recs-overlay").classList.add("hidden");
+        }
+      });
+
+      // Recommendations Drawer
+      function toggleRecsDrawer() {
+        const drawer = document.getElementById("recs-drawer");
+        const overlay = document.getElementById("recs-overlay");
+        drawer.classList.toggle("open");
+        overlay.classList.toggle("hidden");
+
+        if (drawer.classList.contains("open")) {
+          drawer.style.transform = "translateX(0)";
+        } else {
+          drawer.style.transform = "translateX(100%)";
+        }
+      }
+
+      // Sites Dropdown
+      function toggleSitesDropdown() {
+        document.getElementById("sites-dropdown").classList.toggle("hidden");
+      }
+
+      function toggleSiteItem(el, siteId) {
+        el.classList.toggle("selected");
+        const checkbox = el.querySelector(".checkbox");
+        if (el.classList.contains("selected")) {
+          checkbox.classList.add("checked", "bg-accent-green");
+          checkbox.innerHTML =
+            '<svg class="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+        } else {
+          checkbox.classList.remove("checked", "bg-accent-green");
+          checkbox.innerHTML = "";
+        }
+        updateSitesCount();
+      }
+
+      function selectAllSites() {
+        document
+          .querySelectorAll("#sites-dropdown .dropdown-item")
+          .forEach((item) => {
+            if (!item.classList.contains("selected")) {
+              item.classList.add("selected");
+              const checkbox = item.querySelector(".checkbox");
+              checkbox.classList.add("checked", "bg-accent-green");
+              checkbox.innerHTML =
+                '<svg class="w-2.5 h-2.5 text-black" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+            }
+          });
+        updateSitesCount();
+      }
+
+      function clearAllSites() {
+        document
+          .querySelectorAll("#sites-dropdown .dropdown-item")
+          .forEach((item) => {
+            item.classList.remove("selected");
+            const checkbox = item.querySelector(".checkbox");
+            checkbox.classList.remove("checked", "bg-accent-green");
+            checkbox.innerHTML = "";
+          });
+        updateSitesCount();
+      }
+
+      function updateSitesCount() {
+        const count = document.querySelectorAll(
+          "#sites-dropdown .dropdown-item.selected"
+        ).length;
+        document.getElementById("sites-selected").textContent = count;
+      }
+
+      // Note: Close dropdowns and live time are now handled by shared app.js
+    </script>
+    <!-- Shared JavaScript -->
+    <script src="js/app.js"></script>
+  </body>
+</html>
