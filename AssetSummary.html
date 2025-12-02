@@ -15,7 +15,7 @@
       rel="stylesheet"
     />
     <!-- Shared Styles -->
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
     <script>
       tailwind.config = {
         darkMode: "class",
@@ -228,24 +228,16 @@
           <span class="font-semibold text-xs">EnergySage</span>
         </div>
         <nav class="flex items-center gap-1 ml-4">
-          <button
-            class="px-3 py-2.5 text-xs font-medium text-text-tertiary hover:text-text-secondary"
-          >
+          <button class="px-3 py-2.5 text-xs font-medium nav-inactive">
             <a href="./LandingPage.html">KPI</a>
           </button>
-          <button
-            class="px-3 py-2.5 text-xs font-medium border-b-2 border-accent-green dark:text-white"
-          >
+          <button class="px-3 py-2.5 text-xs font-medium border-b-2 nav-active">
             <a href="./AssetSummary.html">Assets Summary</a>
           </button>
-          <button
-            class="px-3 py-2.5 text-xs font-medium text-text-tertiary hover:text-text-secondary"
-          >
+          <button class="px-3 py-2.5 text-xs font-medium nav-inactive">
             <a href="./EquipmentDetails.html">Equipment Details</a>
           </button>
-          <button
-            class="px-3 py-2.5 text-xs font-medium text-text-tertiary hover:text-text-secondary"
-          >
+          <button class="px-3 py-2.5 text-xs font-medium nav-inactive">
             <a href="./FaultsOutliers.html">Faults & Outliers</a>
           </button>
         </nav>
@@ -1712,6 +1704,6 @@
       // Note: Close dropdowns and live time are now handled by shared app.js
     </script>
     <!-- Shared JavaScript -->
-    <script src="js/app.js"></script>
+    <script src="./app.js"></script>
   </body>
 </html>
