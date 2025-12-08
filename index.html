@@ -1,128 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>EnergySage.ai | Asset Performance Monitoring</title>
-    <meta name="description" content="Industrial asset performance monitoring platform for generators, mining trucks, HVAC, turbines, and compressors.">
-    <meta http-equiv="refresh" content="0; url=LandingPage.html">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300dc82' stroke-width='2.5'><path stroke-linecap='round' stroke-linejoin='round' d='M13 10V3L4 14h7v7l9-11h-7z'/></svg>">
-    
+    <meta
+      name="description"
+      content="Industrial asset performance monitoring platform for generators, mining trucks, HVAC, turbines, and compressors."
+    />
+    <meta http-equiv="refresh" content="0; url=LandingPage.html" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300dc82' stroke-width='2.5'><path stroke-linecap='round' stroke-linejoin='round' d='M13 10V3L4 14h7v7l9-11h-7z'/></svg>"
+    />
+
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "IBM Plex Sans", system-ui, sans-serif;
+        background: #0a0a0a;
+        color: #fff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .logo {
+        width: 64px;
+        height: 64px;
+        background: #00dc82;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      .logo svg {
+        width: 36px;
+        height: 36px;
+        color: #000;
+      }
+
+      .brand {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+      }
+
+      .tagline {
+        color: #737373;
+        font-size: 14px;
+      }
+
+      .loading-bar {
+        width: 200px;
+        height: 3px;
+        background: #222;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+
+      .loading-bar-fill {
+        height: 100%;
+        width: 30%;
+        background: #00dc82;
+        border-radius: 3px;
+        animation: loading 1s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
         }
-        
-        body {
-            font-family: 'IBM Plex Sans', system-ui, sans-serif;
-            background: #0a0a0a;
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        50% {
+          transform: scale(1.05);
         }
-        
-        .loader {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 24px;
+      }
+
+      @keyframes loading {
+        0% {
+          transform: translateX(-100%);
         }
-        
-        .logo {
-            width: 64px;
-            height: 64px;
-            background: #00dc82;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: pulse 1.5s ease-in-out infinite;
+        100% {
+          transform: translateX(400%);
         }
-        
-        .logo svg {
-            width: 36px;
-            height: 36px;
-            color: #000;
-        }
-        
-        .brand {
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-        }
-        
-        .tagline {
-            color: #737373;
-            font-size: 14px;
-        }
-        
-        .loading-bar {
-            width: 200px;
-            height: 3px;
-            background: #222;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-        
-        .loading-bar-fill {
-            height: 100%;
-            width: 30%;
-            background: #00dc82;
-            border-radius: 3px;
-            animation: loading 1s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        @keyframes loading {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(400%); }
-        }
-        
-        .redirect-link {
-            margin-top: 32px;
-            color: #00dc82;
-            text-decoration: none;
-            font-size: 12px;
-        }
-        
-        .redirect-link:hover {
-            text-decoration: underline;
-        }
+      }
+
+      .redirect-link {
+        margin-top: 32px;
+        color: #00dc82;
+        text-decoration: none;
+        font-size: 12px;
+      }
+
+      .redirect-link:hover {
+        text-decoration: underline;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="loader">
-        <div class="logo">
-            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-        </div>
-        <div class="brand">EnergySage.ai</div>
-        <div class="tagline">Asset Performance Monitoring</div>
-        <div class="loading-bar">
-            <div class="loading-bar-fill"></div>
-        </div>
+      <div class="logo">
+        <svg
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M13 10V3L4 14h7v7l9-11h-7z"
+          />
+        </svg>
+      </div>
+      <div class="brand">EnergySage.ai</div>
+      <div class="tagline">Asset Performance Monitoring</div>
+      <div class="loading-bar">
+        <div class="loading-bar-fill"></div>
+      </div>
     </div>
-    <a href="LandingPage.html" class="redirect-link">Click here if not redirected</a>
-    
+    <a href="LandingPage.html" class="redirect-link"
+      >Click here if not redirected</a
+    >
+
     <script>
-        // Redirect after a brief moment if meta refresh doesn't work
-        setTimeout(() => {
-            window.location.href = 'LandingPage.html';
-        }, 500);
+      // Redirect after a brief moment if meta refresh doesn't work
+      setTimeout(() => {
+        window.location.href = "LandingPage.html";
+      }, 500);
     </script>
-</body>
+  </body>
 </html>
